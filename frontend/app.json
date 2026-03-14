@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Coomotor",
+    "slug": "coomotor-app",
+    "version": "1.0.0",
+    "sdkVersion": "52.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "backgroundColor": "#1565C0"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "config": {
+        "googleMapsApiKey": "AIzaSyAd8umMVzvZRTqNuQdmT9vVd7qH7u5a-i0"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Coomotor necesita acceso a tu ubicación para mostrarte en el mapa.",
+        "NSLocationAlwaysUsageDescription": "Coomotor necesita acceso a tu ubicación para mostrarte en el mapa."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1565C0"
+      },
+      "package": "com.coomotor.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAd8umMVzvZRTqNuQdmT9vVd7qH7u5a-i0"
+        }
+      },
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Coomotor necesita acceso a tu ubicación para mostrarte en el mapa."
+        }
+      ]
+    ],
+    "web": {}
+  }
+}

@@ -1,0 +1,33 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (nunca subir al repo)
+.env
+.env.local
+
+# Backend - archivos subidos por usuarios
+backend/uploads/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Expo / React Native
+.expo/
+dist/
+web-build/
+android/
+ios/
+
+# Archivos comprimidos y backups
+*.7z
+*.zip
+*.tar.gz
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
