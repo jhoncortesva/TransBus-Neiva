@@ -40,11 +40,19 @@
     },
     "plugins": [
       [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1565C0"
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "Coomotor necesita acceso a tu ubicación para mostrarte en el mapa."
         }
-      ]
+      ],
+      "expo-asset",
+      "expo-font"
     ],
     "web": {}
   }
