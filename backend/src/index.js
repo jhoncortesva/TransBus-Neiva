@@ -3,11 +3,18 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const authRoutes = require('./routes/auth');
 const driverRoutes = require('./routes/drivers');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' },
+});
+
 const PORT = process.env.PORT || 3000;
 
 // Create uploads directory if it doesn't exist
@@ -18,7 +25,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 // Middleware
 app.use(cors({
-  origin: '*', // Allow all origins for Expo development
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -52,7 +59,31 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+// Socket.io — ubicaciones en tiempo real
+// Map: driverId -> { driverId, driverName, latitude, longitude, updatedAt }
+const activeDrivers = new Map();
+
+io.on('connection', (socket) => {
+  // Conductor comparte su ubicación
+  socket.on('driver:update_location', (data) => {
+    activeDrivers.set(data.driverId, { ...data, updatedAt: Date.now() });
+    io.emit('drivers:locations', Array.from(activeDrivers.values()));
+  });
+
+  // Conductor deja de compartir
+  socket.on('driver:stop_location', (data) => {
+    activeDrivers.delete(data.driverId);
+    io.emit('drivers:locations', Array.from(activeDrivers.values()));
+  });
+
+  // Usuario solicita conductores activos al conectarse
+  socket.on('user:request_drivers', () => {
+    socket.emit('drivers:locations', Array.from(activeDrivers.values()));
+  });
+});
+
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Coomotor API running on port ${PORT}`);
   console.log(`📡 Health check: http://localhost:${PORT}/health`);
+  console.log(`🔌 Socket.io activo`);
 });
