@@ -198,36 +198,36 @@ export default function RouteDetailScreen({ navigation, route }) {
       </View>
 
       <View style={styles.mapContainer}>
-        {loadingLocation ? (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="#1565C0" />
-            <Text style={styles.loadingText}>Cargando mapa...</Text>
+        <MapView ref={mapRef} style={styles.map} initialRegion={MAP_REGION} showsCompass mapType="standard">
+          <Polyline coordinates={IDA_COORDS}    strokeColor={idaColor}    strokeWidth={4} />
+          <Polyline coordinates={VUELTA_COORDS} strokeColor={vueltaColor} strokeWidth={4} />
+
+          <Marker coordinate={CLARETIANO}  title="Inicio IDA / Final VUELTA" description="Colegio Claretiano — Calle 51" pinColor="#4CAF50" />
+          <Marker coordinate={CAÑA_BRAVA}  title="Final IDA / Inicio VUELTA" description="Barrio Sur Orientales — Sur Orientales" pinColor="#F44336" />
+
+          {userLocation && (
+            <Marker coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }} title="Mi ubicación">
+              <View style={styles.userMarker}>
+                <View style={styles.userMarkerDot} />
+                <View style={styles.userMarkerRing} />
+              </View>
+            </Marker>
+          )}
+
+          {nearbyDrivers.map((d) => (
+            <Marker key={d.driverId} coordinate={{ latitude: d.latitude, longitude: d.longitude }} title={`🚌 ${d.driverName}`}>
+              <View style={styles.driverMarker}>
+                <Text style={styles.driverEmoji}>🚌</Text>
+              </View>
+            </Marker>
+          ))}
+        </MapView>
+
+        {loadingLocation && (
+          <View style={styles.locationBadge}>
+            <ActivityIndicator size="small" color="#1565C0" />
+            <Text style={styles.locationBadgeText}>Localizando...</Text>
           </View>
-        ) : (
-          <MapView ref={mapRef} style={styles.map} initialRegion={MAP_REGION} showsCompass mapType="standard">
-            <Polyline coordinates={IDA_COORDS}    strokeColor={idaColor}    strokeWidth={4} />
-            <Polyline coordinates={VUELTA_COORDS} strokeColor={vueltaColor} strokeWidth={4} />
-
-            <Marker coordinate={CLARETIANO}  title="Inicio IDA / Final VUELTA" description="Colegio Claretiano — Calle 51" pinColor="#4CAF50" />
-            <Marker coordinate={CAÑA_BRAVA}  title="Final IDA / Inicio VUELTA" description="Barrio Sur Orientales — Sur Orientales"   pinColor="#F44336" />
-
-            {userLocation && (
-              <Marker coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }} title="Mi ubicación">
-                <View style={styles.userMarker}>
-                  <View style={styles.userMarkerDot} />
-                  <View style={styles.userMarkerRing} />
-                </View>
-              </Marker>
-            )}
-
-            {nearbyDrivers.map((d) => (
-              <Marker key={d.driverId} coordinate={{ latitude: d.latitude, longitude: d.longitude }} title={`🚌 ${d.driverName}`}>
-                <View style={styles.driverMarker}>
-                  <Text style={styles.driverEmoji}>🚌</Text>
-                </View>
-              </Marker>
-            ))}
-          </MapView>
         )}
       </View>
 
@@ -290,8 +290,14 @@ const styles = StyleSheet.create({
   headerTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: 'bold' },
   mapContainer: { flex: 1 },
   map: { flex: 1 },
-  loadingOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#EEF2FF' },
-  loadingText: { color: '#5C6BC0', fontSize: 15 },
+  locationBadge: {
+    position: 'absolute', top: 12, alignSelf: 'center',
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.92)', borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 6,
+    shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, elevation: 4,
+  },
+  locationBadgeText: { fontSize: 13, color: '#1565C0', fontWeight: '500' },
   userMarker: { alignItems: 'center', justifyContent: 'center', width: 36, height: 36 },
   userMarkerDot: {
     width: 14, height: 14, borderRadius: 7,

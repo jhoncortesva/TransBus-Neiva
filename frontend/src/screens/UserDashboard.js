@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
+  Modal,
+  BackHandler,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useAuth } from '../context/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function UserDashboard({ navigation }) {
   const { user, logout } = useAuth();
@@ -20,10 +22,23 @@ export default function UserDashboard({ navigation }) {
   const [address, setAddress] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState(null);
+  const [exitModalVisible, setExitModalVisible] = useState(false);
 
   useEffect(() => {
     fetchLocation();
   }, []);
+
+  const handleExitIntent = () => setExitModalVisible(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        handleExitIntent();
+        return true;
+      });
+      return () => sub.remove();
+    }, [])
+  );
 
   const fetchLocation = async () => {
     setLocationLoading(true);
@@ -80,7 +95,7 @@ export default function UserDashboard({ navigation }) {
           </Text>
           <Text style={styles.headerSubtitle}>Coomotor — Tu mejor compañía</Text>
         </View>
-        <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
+        <TouchableOpacity onPress={handleExitIntent} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Salir</Text>
         </TouchableOpacity>
       </View>
@@ -193,13 +208,15 @@ export default function UserDashboard({ navigation }) {
             <Text style={styles.actionLabel}>Ver mapa</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={() => navigation.navigate('Routes')}
-          >
-            <Text style={styles.actionEmoji}>🚌</Text>
-            <Text style={styles.actionLabel}>Rutas</Text>
-          </TouchableOpacity>
+          {user?.role !== 'driver' && (
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('Routes')}
+            >
+              <Text style={styles.actionEmoji}>🚌</Text>
+              <Text style={styles.actionLabel}>Rutas</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={[styles.actionCard, styles.actionCardDisabled]}>
             <Text style={styles.actionEmoji}>📞</Text>
@@ -228,6 +245,26 @@ export default function UserDashboard({ navigation }) {
 
         <Text style={styles.footerNote}>Versión 1.0.0 — Coomotor © 2024</Text>
       </ScrollView>
+
+      <Modal transparent animationType="fade" visible={exitModalVisible} onRequestClose={() => setExitModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>¿Qué deseas hacer?</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setExitModalVisible(false)}>
+                <Text style={styles.modalBtnCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalBtnLogout} onPress={() => { setExitModalVisible(false); logout(); }}>
+                <Text style={styles.modalBtnText}>Cerrar sesión</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalBtnExit} onPress={() => { setExitModalVisible(false); BackHandler.exitApp(); }}>
+                <Text style={styles.modalBtnText}>Salir</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -512,5 +549,62 @@ const styles = StyleSheet.create({
     color: '#BDBDBD',
     fontSize: 12,
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    width: '82%',
+    alignItems: 'center',
+    elevation: 6,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1A237E',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modalBtnCancel: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
+  },
+  modalBtnCancelText: {
+    fontSize: 13,
+    color: '#555',
+    fontWeight: '500',
+  },
+  modalBtnLogout: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: '#1565C0',
+    alignItems: 'center',
+  },
+  modalBtnExit: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: '#C62828',
+    alignItems: 'center',
+  },
+  modalBtnText: {
+    fontSize: 13,
+    color: '#fff',
+    fontWeight: '600',
   },
 });
