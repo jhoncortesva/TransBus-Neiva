@@ -1,9 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// ⚠️ IMPORTANT: Change this to your machine's local IP address
-// Run `ipconfig` (Windows) or `ifconfig` (Mac/Linux) to find your IP
-// Example: 'http://192.168.1.100:3000'
-const BASE_URL = 'http://192.168.0.105:3000'; // <-- CHANGE THIS
+const BASE_URL = 'https://coomotortrans-production.up.railway.app';
 
 const getHeaders = async (isFormData = false) => {
   const token = await AsyncStorage.getItem('token');
