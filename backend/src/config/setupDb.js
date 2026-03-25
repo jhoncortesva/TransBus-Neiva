@@ -85,18 +85,21 @@ async function setupDatabase() {
       [adminUsername]
     );
 
+    const hashedPassword = await bcrypt.hash(adminPassword, 12);
+
     if (existingAdmin.rows.length === 0) {
-      const hashedPassword = await bcrypt.hash(adminPassword, 12);
       await client.query(
         `INSERT INTO users (username, email, password, role, full_name)
          VALUES ($1, $2, $3, 'admin', 'Administrador Coomotor')`,
         [adminUsername, adminEmail, hashedPassword]
       );
-      console.log('✅ Default admin created');
-      console.log(`   Username: ${adminUsername}`);
-      console.log(`   Password: ${adminPassword}`);
-    } else {
-      console.log('ℹ️  Admin already exists');
+      console.log('✅ Admin creado');
+    } else if (process.env.ADMIN_PASSWORD) {
+      await client.query(
+        'UPDATE users SET password = $1 WHERE username = $2',
+        [hashedPassword, adminUsername]
+      );
+      console.log('✅ Contraseña de admin actualizada');
     }
 
     console.log('✅ Database setup complete!');
