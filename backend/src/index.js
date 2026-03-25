@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 
 const authRoutes = require('./routes/auth');
 const driverRoutes = require('./routes/drivers');
+const setupDatabase = require('./config/setupDb');
 
 const app = express();
 const server = http.createServer(app);
@@ -82,8 +83,12 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Coomotor API running on port ${PORT}`);
-  console.log(`📡 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔌 Socket.io activo`);
-});
+setupDatabase()
+  .catch(err => console.error('⚠️ DB setup error:', err.message))
+  .finally(() => {
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Coomotor API running on port ${PORT}`);
+      console.log(`📡 Health check: http://localhost:${PORT}/health`);
+      console.log(`🔌 Socket.io activo`);
+    });
+  });
