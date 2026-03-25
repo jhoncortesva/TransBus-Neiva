@@ -23,8 +23,11 @@
         "NSLocationAlwaysUsageDescription": "Coomotor necesita acceso a tu ubicación para mostrarte en el mapa."
       }
     },
+    "icon": "./assets/icon.png",
     "android": {
+      "icon": "./assets/icon.png",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#1565C0"
       },
       "package": "com.coomotor.app",

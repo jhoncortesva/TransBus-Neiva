@@ -193,10 +193,12 @@ export default function UserDashboard({ navigation }) {
             <Text style={styles.actionLabel}>Ver mapa</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.actionCard, styles.actionCardDisabled]}>
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => navigation.navigate('Routes')}
+          >
             <Text style={styles.actionEmoji}>🚌</Text>
             <Text style={styles.actionLabel}>Rutas</Text>
-            <Text style={styles.actionBadge}>Próximamente</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.actionCard, styles.actionCardDisabled]}>
