@@ -84,6 +84,17 @@ const register = async (req, res) => {
       return res.status(409).json({ error: 'El usuario o email ya está registrado' });
     }
 
+    // Check duplicate document number
+    if (document_number) {
+      const existingDoc = await pool.query(
+        'SELECT id FROM users WHERE document_number = $1',
+        [document_number]
+      );
+      if (existingDoc.rows.length > 0) {
+        return res.status(409).json({ error: 'Este número de documento ya está registrado. ¿Ya tienes una cuenta? Intenta iniciar sesión.' });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const result = await pool.query(

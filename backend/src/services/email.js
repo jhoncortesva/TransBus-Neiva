@@ -8,6 +8,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+transporter.verify((error) => {
+  if (error) {
+    console.error('❌ Email config error:', error.message);
+  } else {
+    console.log('✅ Email service ready');
+  }
+});
+
 const sendWelcomeEmail = async ({ to, fullName, username, password }) => {
   const name = fullName || username;
 
