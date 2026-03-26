@@ -1,31 +1,12 @@
-const nodemailer = require('nodemailer');
-require('dns').setDefaultResultOrder('ipv4first');
+const { Resend } = require('resend');
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  family: 4,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: { rejectUnauthorized: false },
-});
-
-transporter.verify((error) => {
-  if (error) {
-    console.error('❌ Email config error:', error.message);
-  } else {
-    console.log('✅ Email service ready');
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendWelcomeEmail = async ({ to, fullName, username, password }) => {
   const name = fullName || username;
 
-  await transporter.sendMail({
-    from: `"Coomotor" <${process.env.EMAIL_USER}>`,
+  await resend.emails.send({
+    from: 'Coomotor <onboarding@resend.dev>',
     to,
     subject: 'Bienvenido a Coomotor — Tus datos de acceso',
     html: `
