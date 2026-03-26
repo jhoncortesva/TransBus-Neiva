@@ -74,14 +74,15 @@ const register = async (req, res) => {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
     }
 
-    // Check if username or email already exists
-    const existing = await pool.query(
-      'SELECT id FROM users WHERE username = $1 OR email = $2',
-      [username, email]
-    );
+    // Check duplicates individually for specific messages
+    const existingUsername = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+    if (existingUsername.rows.length > 0) {
+      return res.status(409).json({ error: 'Este nombre de usuario ya está en uso. ¿Ya tienes una cuenta? Intenta iniciar sesión.' });
+    }
 
-    if (existing.rows.length > 0) {
-      return res.status(409).json({ error: 'El usuario o email ya está registrado' });
+    const existingEmail = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existingEmail.rows.length > 0) {
+      return res.status(409).json({ error: 'Este correo electrónico ya está registrado. ¿Ya tienes una cuenta? Intenta iniciar sesión.' });
     }
 
     // Check duplicate document number
