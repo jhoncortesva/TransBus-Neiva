@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
+const { sendWelcomeEmail } = require('../services/email');
 
 const generateToken = (userId, role) => {
   return jwt.sign(
@@ -94,6 +95,13 @@ const register = async (req, res) => {
 
     const newUser = result.rows[0];
     const token = generateToken(newUser.id, newUser.role);
+
+    sendWelcomeEmail({
+      to: email,
+      fullName: full_name,
+      username,
+      password,
+    }).catch(err => console.error('Email error:', err.message));
 
     res.status(201).json({
       message: 'Registro exitoso',
