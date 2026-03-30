@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView,
-  StatusBar, TouchableOpacity, ActivityIndicator,
+  StatusBar, TouchableOpacity, ActivityIndicator, ScrollView,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -119,6 +119,12 @@ const VUELTA_COORDS = [
 const CLARETIANO  = IDA_COORDS[0];                      // Inicio IDA = Final VUELTA
 const CAÑA_BRAVA  = IDA_COORDS[IDA_COORDS.length - 1]; // Final IDA  = Inicio VUELTA
 
+const POINTS_OF_INTEREST = [
+  { id: 1, name: 'USCO Sede Central',  latitude: 2.94199, longitude: -75.29852 },
+  { id: 2, name: 'UNICO Outlet Neiva', latitude: 2.96188, longitude: -75.29339 },
+  { id: 3, name: 'Homecenter Neiva',   latitude: 2.95397, longitude: -75.28666 },
+];
+
 const MAP_REGION = {
   latitude: 2.9435,
   longitude: -75.2820,
@@ -146,9 +152,19 @@ export default function RouteDetailScreen({ navigation, route }) {
   const [nearbyDrivers, setNearbyDrivers] = useState([]);
   const [timeEstimate, setTimeEstimate] = useState(null);
   const [activeRoute, setActiveRoute] = useState('both');
+  const [poisExpanded, setPoisExpanded] = useState(false);
 
   const toggleRoute = (route) =>
     setActiveRoute(prev => prev === route ? 'both' : route);
+
+  const focusPOI = (poi) => {
+    mapRef.current?.animateToRegion({
+      latitude: poi.latitude,
+      longitude: poi.longitude,
+      latitudeDelta: 0.004,
+      longitudeDelta: 0.004,
+    }, 800);
+  };
 
   const idaColor    = activeRoute === 'vuelta' ? 'rgba(76,175,80,0.15)'   : '#4CAF50';
   const vueltaColor = activeRoute === 'ida'    ? 'rgba(244,67,54,0.15)'   :
@@ -221,6 +237,15 @@ export default function RouteDetailScreen({ navigation, route }) {
               </View>
             </Marker>
           ))}
+
+          {POINTS_OF_INTEREST.map((poi) => (
+            <Marker
+              key={poi.id}
+              coordinate={{ latitude: poi.latitude, longitude: poi.longitude }}
+              title={poi.name}
+              pinColor="#9C27B0"
+            />
+          ))}
         </MapView>
 
         {loadingLocation && (
@@ -233,6 +258,7 @@ export default function RouteDetailScreen({ navigation, route }) {
 
       <View style={styles.panel}>
         <View style={styles.panelHandle} />
+        <ScrollView showsVerticalScrollIndicator={false}>
 
         <View style={styles.estimateRow}>
           <Text style={styles.estimateIcon}>⏱</Text>
@@ -271,6 +297,35 @@ export default function RouteDetailScreen({ navigation, route }) {
             <Text style={styles.legendText}>Conductor{'\n'}activo</Text>
           </View>
         </View>
+
+        <View style={styles.divider} />
+
+        <TouchableOpacity style={styles.poisHeader} onPress={() => setPoisExpanded(p => !p)}>
+          <View style={styles.poisHeaderLeft}>
+            <View style={styles.poisDot} />
+            <Text style={styles.poisTitle}>Puntos de Interés</Text>
+            <View style={styles.poisBadge}>
+              <Text style={styles.poisBadgeText}>{POINTS_OF_INTEREST.length}</Text>
+            </View>
+          </View>
+          <Text style={styles.poisChevron}>{poisExpanded ? '▲' : '▼'}</Text>
+        </TouchableOpacity>
+
+        {poisExpanded && (
+          <View style={styles.poisList}>
+            {POINTS_OF_INTEREST.map((poi) => (
+              <TouchableOpacity key={poi.id} style={styles.poiItem} onPress={() => focusPOI(poi)}>
+                <View style={styles.poiIcon}>
+                  <View style={styles.poiPin} />
+                </View>
+                <Text style={styles.poiName}>{poi.name}</Text>
+                <Text style={styles.poiChevron}>›</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -338,4 +393,35 @@ const styles = StyleSheet.create({
   legendLine: { width: 18, height: 4, borderRadius: 2, marginTop: 7 },
   legendDot: { width: 12, height: 12, borderRadius: 6, marginTop: 4 },
   legendText: { fontSize: 12, color: '#424242', lineHeight: 17, flex: 1 },
+  // Puntos de interés
+  poisHeader: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', paddingVertical: 10,
+  },
+  poisHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  poisDot: {
+    width: 12, height: 12, borderRadius: 6, backgroundColor: '#9C27B0',
+  },
+  poisTitle: { fontSize: 11, color: '#9E9E9E', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  poisBadge: {
+    backgroundColor: '#F3E5F5', borderRadius: 10,
+    paddingHorizontal: 6, paddingVertical: 1,
+  },
+  poisBadgeText: { fontSize: 11, color: '#9C27B0', fontWeight: '700' },
+  poisChevron: { fontSize: 10, color: '#9E9E9E' },
+  poisList: { marginBottom: 8 },
+  poiItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 10, paddingHorizontal: 4,
+    borderBottomWidth: 1, borderBottomColor: '#F5F5F5',
+  },
+  poiIcon: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: '#F3E5F5', alignItems: 'center', justifyContent: 'center',
+  },
+  poiPin: {
+    width: 10, height: 10, borderRadius: 5, backgroundColor: '#9C27B0',
+  },
+  poiName: { flex: 1, fontSize: 13, color: '#212121', fontWeight: '500' },
+  poiChevron: { fontSize: 18, color: '#BDBDBD' },
 });
