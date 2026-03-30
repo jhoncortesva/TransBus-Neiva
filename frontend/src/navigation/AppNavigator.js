@@ -11,6 +11,7 @@ import AdminDashboard from '../screens/AdminDashboard';
 import MapScreen from '../screens/MapScreen';
 import RoutesScreen from '../screens/RoutesScreen';
 import RouteDetailScreen from '../screens/RouteDetailScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -55,6 +56,7 @@ export default function AppNavigator() {
         <Stack.Screen name="MapScreen" component={MapScreen} />
         <Stack.Screen name="Routes" component={RoutesScreen} />
         <Stack.Screen name="RouteDetail" component={RouteDetailScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

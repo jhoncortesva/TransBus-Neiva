@@ -218,15 +218,10 @@ export default function UserDashboard({ navigation }) {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={[styles.actionCard, styles.actionCardDisabled]}>
-            <Text style={styles.actionEmoji}>📞</Text>
-            <Text style={styles.actionLabel}>Soporte</Text>
-            <Text style={styles.actionBadge}>Próximamente</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* User info card */}
-        <View style={styles.userCard}>
+        {/* User info card → abre Ajustes */}
+        <TouchableOpacity style={styles.userCard} onPress={() => navigation.navigate('Settings')} activeOpacity={0.85}>
           <View style={styles.userAvatar}>
             <Text style={styles.userAvatarText}>
               {(user?.fullName || user?.username || 'U')[0].toUpperCase()}
@@ -241,7 +236,8 @@ export default function UserDashboard({ navigation }) {
               </Text>
             </View>
           </View>
-        </View>
+          <Text style={styles.chevronSettings}>›</Text>
+        </TouchableOpacity>
 
         <Text style={styles.footerNote}>Versión 1.0.0 — Coomotor © 2024</Text>
       </ScrollView>
@@ -544,6 +540,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#3949AB',
     fontWeight: '600',
+  },
+  chevronSettings: {
+    fontSize: 24,
+    color: '#BDBDBD',
   },
   footerNote: {
     color: '#BDBDBD',
