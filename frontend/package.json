@@ -18,7 +18,7 @@
     "expo-asset": "~11.0.5",
     "expo-document-picker": "~13.0.3",
     "expo-font": "~13.0.4",
-    "expo-image-picker": "^55.0.14",
+    "expo-image-picker": "~16.0.6",
     "expo-linear-gradient": "~14.0.2",
     "expo-location": "~18.0.10",
     "expo-splash-screen": "~0.29.13",
