@@ -59,9 +59,15 @@ export default function SettingsScreen({ navigation }) {
     });
     if (result.canceled) return;
 
+    const rawBase64 = result.assets[0].base64;
+    if (!rawBase64) {
+      Alert.alert('Error', 'No se pudo obtener la imagen. Intenta de nuevo.');
+      return;
+    }
+
     setLoadingPhoto(true);
     try {
-      const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      const base64 = `data:image/jpeg;base64,${rawBase64}`;
       await authAPI.updatePhoto(base64);
       await updateUser({ profilePhoto: base64 });
       Alert.alert('Éxito', 'Foto de perfil actualizada');

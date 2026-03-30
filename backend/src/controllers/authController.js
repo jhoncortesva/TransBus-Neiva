@@ -22,7 +22,7 @@ const login = async (req, res) => {
 
     // Find user by username or email
     const result = await pool.query(
-      `SELECT id, username, email, password, role, full_name, is_active 
+      `SELECT id, username, email, password, role, full_name, is_active, profile_photo
        FROM users WHERE username = $1 OR email = $1`,
       [username]
     );
@@ -53,6 +53,7 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         fullName: user.full_name,
+        profilePhoto: user.profile_photo || null,
       },
     });
   } catch (error) {
