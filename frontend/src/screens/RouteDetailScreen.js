@@ -123,6 +123,7 @@ const POINTS_OF_INTEREST = [
   { id: 1, name: 'USCO Sede Central',  latitude: 2.94199, longitude: -75.29852 },
   { id: 2, name: 'UNICO Outlet Neiva', latitude: 2.96188, longitude: -75.29339 },
   { id: 3, name: 'Homecenter Neiva',   latitude: 2.95397, longitude: -75.28666 },
+  { id: 4, name: 'Comfamiliar Huila',  latitude: 2.93006, longitude: -75.28945 },
 ];
 
 const MAP_REGION = {
