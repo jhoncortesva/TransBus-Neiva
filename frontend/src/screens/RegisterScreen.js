@@ -74,6 +74,15 @@ export default function RegisterScreen({ navigation }) {
           <View style={styles.formContainer}>
             <TextInput
               style={styles.input}
+              value={form.full_name}
+              onChangeText={(v) => update('full_name', v.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚ\s]/g, ''))}
+              placeholder="Nombre Completo"
+              placeholderTextColor="rgba(255,255,255,0.7)"
+              autoCapitalize="words"
+            />
+
+            <TextInput
+              style={styles.input}
               value={form.username}
               onChangeText={(v) => update('username', v)}
               placeholder="Ingresa tu nombre de usuario"
