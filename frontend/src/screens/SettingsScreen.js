@@ -106,6 +106,7 @@ export default function SettingsScreen({ navigation }) {
             </View>
           </TouchableOpacity>
           <Text style={styles.profileName}>{user?.fullName || user?.username}</Text>
+          <Text style={styles.profileUsername}>@{user?.username}</Text>
           <Text style={styles.profileEmail}>{user?.email || ''}</Text>
         </View>
 
@@ -222,6 +223,7 @@ const styles = StyleSheet.create({
   },
   avatarEditIcon: { fontSize: 16 },
   profileName: { fontSize: 18, fontWeight: '700', color: '#1A237E' },
+  profileUsername: { fontSize: 13, color: '#5C6BC0', fontWeight: '500' },
   profileEmail: { fontSize: 13, color: '#757575' },
   sectionLabel: {
     fontSize: 11, fontWeight: '700', color: '#9E9E9E',

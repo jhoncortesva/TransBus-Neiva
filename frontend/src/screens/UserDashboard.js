@@ -92,7 +92,7 @@ export default function UserDashboard({ navigation }) {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerGreeting}>
-            ¡Hola, {user?.fullName?.split(' ')[0] || user?.username}!
+            ¡Hola, {user?.username}!
           </Text>
           <Text style={styles.headerSubtitle}>Coomotor — Tu mejor compañía</Text>
         </View>
