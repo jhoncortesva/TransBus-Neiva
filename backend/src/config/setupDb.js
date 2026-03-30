@@ -102,6 +102,11 @@ async function setupDatabase() {
       console.log('✅ Contraseña de admin actualizada');
     }
 
+    // Add profile_photo column if it doesn't exist
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo TEXT;
+    `);
+
     console.log('✅ Database setup complete!');
   } catch (error) {
     console.error('❌ Setup error:', error.message);

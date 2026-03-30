@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, StatusBar,
-  TouchableOpacity, TextInput, Alert, ScrollView, Modal, ActivityIndicator,
+  TouchableOpacity, TextInput, Alert, ScrollView, Modal,
+  ActivityIndicator, Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 
 export default function SettingsScreen({ navigation }) {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const [passwordModal, setPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loadingPassword, setLoadingPassword] = useState(false);
+  const [loadingPhoto, setLoadingPhoto] = useState(false);
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -29,15 +33,42 @@ export default function SettingsScreen({ navigation }) {
     }
     setLoadingPassword(true);
     try {
-      // TODO: conectar con endpoint de cambio de contraseña
-      await new Promise(r => setTimeout(r, 800));
+      await authAPI.changePassword(currentPassword, newPassword);
       Alert.alert('Éxito', 'Contraseña actualizada correctamente');
       setPasswordModal(false);
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
-    } catch {
-      Alert.alert('Error', 'No se pudo actualizar la contraseña');
+    } catch (error) {
+      Alert.alert('Error', error.message || 'No se pudo actualizar la contraseña');
     } finally {
       setLoadingPassword(false);
+    }
+  };
+
+  const handleChangePhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso denegado', 'Necesitamos acceso a tu galería para cambiar la foto.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+    if (result.canceled) return;
+
+    setLoadingPhoto(true);
+    try {
+      const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      await authAPI.updatePhoto(base64);
+      await updateUser({ profilePhoto: base64 });
+      Alert.alert('Éxito', 'Foto de perfil actualizada');
+    } catch (error) {
+      Alert.alert('Error', error.message || 'No se pudo actualizar la foto');
+    } finally {
+      setLoadingPhoto(false);
     }
   };
 
@@ -59,14 +90,21 @@ export default function SettingsScreen({ navigation }) {
 
         {/* Foto de perfil */}
         <View style={styles.profileSection}>
-          <View style={styles.avatarWrapper}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initial}</Text>
+          <TouchableOpacity style={styles.avatarWrapper} onPress={handleChangePhoto} disabled={loadingPhoto}>
+            {user?.profilePhoto ? (
+              <Image source={{ uri: user.profilePhoto }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{initial}</Text>
+              </View>
+            )}
+            <View style={styles.avatarEditBtn}>
+              {loadingPhoto
+                ? <ActivityIndicator size="small" color="#1565C0" />
+                : <Text style={styles.avatarEditIcon}>📷</Text>
+              }
             </View>
-            <TouchableOpacity style={styles.avatarEditBtn} onPress={() => Alert.alert('Próximamente', 'La opción de cambiar foto estará disponible pronto.')}>
-              <Text style={styles.avatarEditIcon}>📷</Text>
-            </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
           <Text style={styles.profileName}>{user?.fullName || user?.username}</Text>
           <Text style={styles.profileEmail}>{user?.email || ''}</Text>
         </View>
@@ -135,7 +173,10 @@ export default function SettingsScreen({ navigation }) {
                 <Text style={styles.modalBtnCancelText}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalBtnConfirm} onPress={handleChangePassword} disabled={loadingPassword}>
-                {loadingPassword ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.modalBtnConfirmText}>Guardar</Text>}
+                {loadingPassword
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.modalBtnConfirmText}>Guardar</Text>
+                }
               </TouchableOpacity>
             </View>
           </View>
@@ -167,11 +208,17 @@ const styles = StyleSheet.create({
     shadowColor: '#1565C0', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
   },
+  avatarImage: {
+    width: 88, height: 88, borderRadius: 44,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
+  },
   avatarText: { color: '#FFFFFF', fontSize: 36, fontWeight: 'bold' },
   avatarEditBtn: {
     position: 'absolute', bottom: 0, right: 0,
     backgroundColor: '#FFFFFF', borderRadius: 16, padding: 5,
     shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 3,
+    width: 30, height: 30, alignItems: 'center', justifyContent: 'center',
   },
   avatarEditIcon: { fontSize: 16 },
   profileName: { fontSize: 18, fontWeight: '700', color: '#1A237E' },
@@ -192,10 +239,7 @@ const styles = StyleSheet.create({
   optionSub: { fontSize: 12, color: '#9E9E9E', marginTop: 2 },
   optionChevron: { fontSize: 22, color: '#BDBDBD' },
   divider: { height: 1, backgroundColor: '#F5F5F5', marginHorizontal: 16 },
-  modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modalBox: {
     backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, gap: 12,

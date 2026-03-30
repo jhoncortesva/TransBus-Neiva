@@ -12,6 +12,7 @@ import {
   BackHandler,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import { Image } from 'react-native';
 import * as Location from 'expo-location';
 import { useAuth } from '../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
@@ -222,11 +223,15 @@ export default function UserDashboard({ navigation }) {
 
         {/* User info card → abre Ajustes */}
         <TouchableOpacity style={styles.userCard} onPress={() => navigation.navigate('Settings')} activeOpacity={0.85}>
-          <View style={styles.userAvatar}>
-            <Text style={styles.userAvatarText}>
-              {(user?.fullName || user?.username || 'U')[0].toUpperCase()}
-            </Text>
-          </View>
+          {user?.profilePhoto ? (
+            <Image source={{ uri: user.profilePhoto }} style={styles.userAvatarImg} />
+          ) : (
+            <View style={styles.userAvatar}>
+              <Text style={styles.userAvatarText}>
+                {(user?.fullName || user?.username || 'U')[0].toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user?.fullName || user?.username}</Text>
             <Text style={styles.userEmail}>{user?.email || ''}</Text>
@@ -501,6 +506,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
+  },
+  userAvatarImg: {
+    width: 52, height: 52, borderRadius: 26,
   },
   userAvatar: {
     width: 52,

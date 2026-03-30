@@ -48,6 +48,26 @@ export const authAPI = {
     const response = await fetch(`${BASE_URL}/api/auth/profile`, { headers });
     return handleResponse(response);
   },
+
+  changePassword: async (currentPassword, newPassword) => {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}/api/auth/change-password`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    return handleResponse(response);
+  },
+
+  updatePhoto: async (photo) => {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}/api/auth/update-photo`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ photo }),
+    });
+    return handleResponse(response);
+  },
 };
 
 export const driversAPI = {
