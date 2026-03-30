@@ -50,25 +50,35 @@ export default function SettingsScreen({ navigation }) {
       Alert.alert('Permiso denegado', 'Necesitamos acceso a tu galería para cambiar la foto.');
       return;
     }
+
+    // base64:false — en Android, allowsEditing rompe el base64 devuelto por el picker.
+    // Leemos el base64 manualmente desde la URI después de seleccionar.
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
-      base64: true,
+      base64: false,
     });
     if (result.canceled) return;
 
-    const rawBase64 = result.assets[0].base64;
-    console.log('[Photo] base64 length:', rawBase64 ? rawBase64.length : 'NULL');
-    if (!rawBase64) {
+    const uri = result.assets[0].uri;
+    if (!uri) {
       Alert.alert('Error', 'No se pudo obtener la imagen. Intenta de nuevo.');
       return;
     }
 
     setLoadingPhoto(true);
     try {
-      const base64 = `data:image/jpeg;base64,${rawBase64}`;
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
       await authAPI.updatePhoto(base64);
       await updateUser({ profilePhoto: base64 });
       Alert.alert('Éxito', 'Foto de perfil actualizada');
