@@ -8,8 +8,6 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
       "backgroundColor": "#1565C0"
     },
     "assetBundlePatterns": [
@@ -50,9 +48,6 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
           "backgroundColor": "#1565C0"
         }
       ],
