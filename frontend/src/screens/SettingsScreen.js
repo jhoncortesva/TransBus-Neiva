@@ -60,6 +60,7 @@ export default function SettingsScreen({ navigation }) {
     if (result.canceled) return;
 
     const rawBase64 = result.assets[0].base64;
+    console.log('[Photo] base64 length:', rawBase64 ? rawBase64.length : 'NULL');
     if (!rawBase64) {
       Alert.alert('Error', 'No se pudo obtener la imagen. Intenta de nuevo.');
       return;

@@ -38,7 +38,9 @@
       },
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE"
       ],
       "usesCleartextTraffic": true
     },
@@ -53,6 +55,12 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Coomotor necesita acceso a tu ubicación para mostrarte en el mapa."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Coomotor necesita acceso a tu galería para cambiar la foto de perfil."
         }
       ],
       "expo-asset",
