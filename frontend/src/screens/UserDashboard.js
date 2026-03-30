@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,64 +10,25 @@ import {
   ActivityIndicator,
   Modal,
   BackHandler,
-  Alert,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Image } from 'react-native';
 import * as Location from 'expo-location';
 import { useAuth } from '../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
-import { getSocket } from '../services/socket';
 
 export default function UserDashboard({ navigation }) {
-  const { user, logout } = useAuth();
+  const { user, logout, tracking, toggleTracking } = useAuth();
   const isDriver = user?.role === 'driver';
   const [location, setLocation] = useState(null);
   const [address, setAddress] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [locationError, setLocationError] = useState(null);
   const [exitModalVisible, setExitModalVisible] = useState(false);
-  const [tracking, setTracking] = useState(false);
-  const watchRef = useRef(null);
 
   useEffect(() => {
     fetchLocation();
-    return () => {
-      if (watchRef.current) watchRef.current.remove();
-      if (isDriver && tracking) {
-        getSocket().emit('driver:stop_location', { driverId: user.id });
-      }
-    };
   }, []);
-
-  const toggleTracking = async () => {
-    if (tracking) {
-      if (watchRef.current) watchRef.current.remove();
-      watchRef.current = null;
-      setTracking(false);
-      getSocket().emit('driver:stop_location', { driverId: user.id });
-      return;
-    }
-
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Activa el permiso de ubicación en Ajustes.');
-      return;
-    }
-
-    setTracking(true);
-    watchRef.current = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.High, distanceInterval: 10 },
-      (loc) => {
-        getSocket().emit('driver:update_location', {
-          driverId: user.id,
-          driverName: user.fullName || user.username,
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-        });
-      }
-    );
-  };
 
   const handleExitIntent = () => setExitModalVisible(true);
 
@@ -262,7 +223,7 @@ export default function UserDashboard({ navigation }) {
           {isDriver && (
             <TouchableOpacity
               style={[styles.actionCard, tracking && styles.actionCardActive]}
-              onPress={toggleTracking}
+              onPress={() => toggleTracking(user.id, user.fullName || user.username)}
             >
               <Text style={styles.actionEmoji}>{tracking ? '⏹️' : '📡'}</Text>
               <Text style={[styles.actionLabel, tracking && styles.actionLabelActive]}>

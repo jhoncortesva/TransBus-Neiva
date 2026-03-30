@@ -15,18 +15,17 @@ import { useAuth } from '../context/AuthContext';
 import { getSocket, disconnectSocket } from '../services/socket';
 
 export default function MapScreen({ navigation }) {
-  const { user } = useAuth();
+  const { user, tracking, toggleTracking } = useAuth();
   const isDriver = user?.role === 'driver';
 
   const [location, setLocation] = useState(null);
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [tracking, setTracking] = useState(false);
   const [nearbyDrivers, setNearbyDrivers] = useState([]);
 
   const mapRef = useRef(null);
-  const watchRef = useRef(null);
+  const uiWatchRef = useRef(null);
 
   useEffect(() => {
     requestLocationPermission();
@@ -41,10 +40,6 @@ export default function MapScreen({ navigation }) {
     }
 
     return () => {
-      if (watchRef.current) watchRef.current.remove();
-      if (isDriver && tracking) {
-        getSocket().emit('driver:stop_location', { driverId: user.id });
-      }
       if (!isDriver) {
         const socket = getSocket();
         socket.off('drivers:locations');
@@ -107,42 +102,39 @@ export default function MapScreen({ navigation }) {
     }
   };
 
-  const toggleTracking = async () => {
-    if (tracking) {
-      if (watchRef.current) watchRef.current.remove();
-      watchRef.current = null;
-      setTracking(false);
-      if (isDriver) {
-        getSocket().emit('driver:stop_location', { driverId: user.id });
-      }
-      return;
-    }
-
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Activa el permiso de ubicación en Ajustes.');
-      return;
-    }
-
-    setTracking(true);
-    watchRef.current = await Location.watchPositionAsync(
+  const startUIWatch = async () => {
+    if (uiWatchRef.current) return;
+    uiWatchRef.current = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.High, distanceInterval: 10 },
       async (loc) => {
         setLocation(loc.coords);
         centerMap(loc.coords);
         await reverseGeocode(loc.coords.latitude, loc.coords.longitude);
-
-        // Conductor comparte posición en tiempo real
-        if (isDriver) {
-          getSocket().emit('driver:update_location', {
-            driverId: user.id,
-            driverName: user.fullName || user.username,
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-          });
-        }
       }
     );
+  };
+
+  const stopUIWatch = () => {
+    if (uiWatchRef.current) {
+      uiWatchRef.current.remove();
+      uiWatchRef.current = null;
+    }
+  };
+
+  // Si el tracking ya estaba activo al abrir el mapa, arrancar el watch de UI
+  useEffect(() => {
+    if (tracking && isDriver) startUIWatch();
+    return () => stopUIWatch();
+  }, [tracking]);
+
+  const handleToggleTracking = async () => {
+    if (tracking) {
+      stopUIWatch();
+    }
+    await toggleTracking(user.id, user.fullName || user.username);
+    if (!tracking) {
+      await startUIWatch();
+    }
   };
 
   const formatCoords = (coords) => {
@@ -288,7 +280,7 @@ export default function MapScreen({ navigation }) {
         {/* Botón de seguimiento */}
         <TouchableOpacity
           style={[styles.trackingBtn, tracking && styles.trackingBtnActive]}
-          onPress={toggleTracking}
+          onPress={handleToggleTracking}
         >
           <Text style={styles.trackingBtnText}>
             {isDriver
