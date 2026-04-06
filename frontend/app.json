@@ -58,6 +58,14 @@
         }
       ],
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1565C0",
+          "androidMode": "default"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Coomotor necesita acceso a tu galería para cambiar la foto de perfil."

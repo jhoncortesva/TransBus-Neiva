@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView,
-  StatusBar, TouchableOpacity, ActivityIndicator, ScrollView,
+  StatusBar, TouchableOpacity, ActivityIndicator, ScrollView, Alert,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 import { getSocket } from '../services/socket';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 // ─── Calibración base ────────────────────────────────────────────────────────
 // Puntos confirmados:
@@ -154,9 +163,51 @@ export default function RouteDetailScreen({ navigation, route }) {
   const [timeEstimate, setTimeEstimate] = useState(null);
   const [activeRoute, setActiveRoute] = useState('both');
   const [poisExpanded, setPoisExpanded] = useState(false);
+  const [notifActive, setNotifActive] = useState(false);
+  const lastNotifRef = useRef(0);
 
   const toggleRoute = (route) =>
     setActiveRoute(prev => prev === route ? 'both' : route);
+
+  const toggleNotifications = async () => {
+    if (notifActive) {
+      setNotifActive(false);
+      return;
+    }
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Activa los permisos de notificación en Ajustes del dispositivo.');
+      return;
+    }
+    setNotifActive(true);
+    Alert.alert('Notificaciones activas', 'Te avisaremos cuando una buseta esté a 10 minutos de tu ubicación.');
+  };
+
+  useEffect(() => {
+    if (!notifActive || !userLocation || nearbyDrivers.length === 0) return;
+
+    const now = Date.now();
+    if (now - lastNotifRef.current < 5 * 60 * 1000) return; // cooldown 5 min
+
+    let minMinutes = Infinity;
+    nearbyDrivers.forEach((d) => {
+      const dist = haversineKm(d.latitude, d.longitude, userLocation.latitude, userLocation.longitude);
+      const minutes = Math.round((dist / 20) * 60);
+      if (minutes < minMinutes) minMinutes = minutes;
+    });
+
+    if (minMinutes <= 10) {
+      lastNotifRef.current = now;
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: `🚌 Ruta ${routeData.name}`,
+          body: `Una buseta está a ~${minMinutes} min de tu ubicación`,
+          sound: true,
+        },
+        trigger: null,
+      });
+    }
+  }, [nearbyDrivers, notifActive, userLocation]);
 
   const focusPOI = (poi) => {
     mapRef.current?.animateToRegion({
@@ -279,6 +330,19 @@ export default function RouteDetailScreen({ navigation, route }) {
 
         <View style={styles.divider} />
 
+        <TouchableOpacity
+          style={[styles.notifBtn, notifActive && styles.notifBtnActive]}
+          onPress={toggleNotifications}
+        >
+          <Text style={styles.notifBtnIcon}>{notifActive ? '🔔' : '🔕'}</Text>
+          <Text style={[styles.notifBtnText, notifActive && styles.notifBtnTextActive]}>
+            {notifActive ? 'Notificaciones activas' : 'Activar notificaciones de buseta'}
+          </Text>
+          {notifActive && <View style={styles.notifDot} />}
+        </TouchableOpacity>
+
+        <View style={styles.divider} />
+
         <Text style={styles.legendTitle}>Referencias del mapa</Text>
         <View style={styles.legendGrid}>
           <TouchableOpacity style={[styles.legendItem, activeRoute === 'ida' && styles.legendItemActive]} onPress={() => toggleRoute('ida')}>
@@ -394,6 +458,22 @@ const styles = StyleSheet.create({
   legendLine: { width: 18, height: 4, borderRadius: 2, marginTop: 7 },
   legendDot: { width: 12, height: 12, borderRadius: 6, marginTop: 4 },
   legendText: { fontSize: 12, color: '#424242', lineHeight: 17, flex: 1 },
+  // Notificaciones
+  notifBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: '#F5F5F5', borderRadius: 12, paddingVertical: 12,
+    paddingHorizontal: 14, borderWidth: 1.5, borderColor: '#E0E0E0',
+    marginBottom: 14,
+  },
+  notifBtnActive: {
+    backgroundColor: '#FFF8E1', borderColor: '#FFB300',
+  },
+  notifBtnIcon: { fontSize: 18 },
+  notifBtnText: { flex: 1, fontSize: 13, color: '#616161', fontWeight: '600' },
+  notifBtnTextActive: { color: '#E65100' },
+  notifDot: {
+    width: 8, height: 8, borderRadius: 4, backgroundColor: '#FFB300',
+  },
   // Puntos de interés
   poisHeader: {
     flexDirection: 'row', alignItems: 'center',
