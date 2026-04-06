@@ -295,6 +295,12 @@ export default function MapScreen({ navigation }) {
             Los pasajeros pueden ver tu posición en tiempo real
           </Text>
         )}
+
+        {!isDriver && (
+          <TouchableOpacity style={styles.routesBtn} onPress={() => navigation.navigate('Routes')}>
+            <Text style={styles.routesBtnText}>🚌 Ver rutas disponibles</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -414,4 +420,10 @@ const styles = StyleSheet.create({
     textAlign: 'center', fontSize: 12, color: '#4CAF50',
     fontWeight: '500', marginTop: 8,
   },
+  routesBtn: {
+    marginTop: 10, borderRadius: 12, paddingVertical: 11,
+    paddingHorizontal: 16, alignItems: 'center',
+    borderWidth: 1.5, borderColor: '#C5CAE9', backgroundColor: '#EEF2FF',
+  },
+  routesBtnText: { color: '#3949AB', fontWeight: '700', fontSize: 13 },
 });
