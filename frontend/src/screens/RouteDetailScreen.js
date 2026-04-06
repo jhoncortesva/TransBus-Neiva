@@ -6,6 +6,7 @@ import {
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSocket } from '../services/socket';
 
 Notifications.setNotificationHandler({
@@ -165,6 +166,7 @@ export default function RouteDetailScreen({ navigation, route }) {
   const [poisExpanded, setPoisExpanded] = useState(false);
   const [notifActive, setNotifActive] = useState(false);
   const lastNotifRef = useRef(0);
+  const notifKey = `notif_route_${routeData.name}`;
 
   const toggleRoute = (route) =>
     setActiveRoute(prev => prev === route ? 'both' : route);
@@ -172,6 +174,7 @@ export default function RouteDetailScreen({ navigation, route }) {
   const toggleNotifications = async () => {
     if (notifActive) {
       setNotifActive(false);
+      AsyncStorage.setItem(notifKey, 'false');
       return;
     }
     const { status } = await Notifications.requestPermissionsAsync();
@@ -180,6 +183,7 @@ export default function RouteDetailScreen({ navigation, route }) {
       return;
     }
     setNotifActive(true);
+    AsyncStorage.setItem(notifKey, 'true');
     Alert.alert('Notificaciones activas', 'Te avisaremos cuando una buseta esté a 10 minutos de tu ubicación.');
   };
 
@@ -227,6 +231,11 @@ export default function RouteDetailScreen({ navigation, route }) {
     const socket = getSocket();
     socket.emit('user:request_drivers');
     socket.on('drivers:locations', setNearbyDrivers);
+
+    AsyncStorage.getItem(notifKey).then((val) => {
+      if (val === 'true') setNotifActive(true);
+    });
+
     return () => { socket.off('drivers:locations'); };
   }, []);
 
