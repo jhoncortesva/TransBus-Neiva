@@ -258,7 +258,7 @@ export default function UserDashboard({ navigation }) {
           <Text style={styles.chevronSettings}>›</Text>
         </TouchableOpacity>
 
-        <Text style={styles.footerNote}>Versión 1.0.0 — Coomotor © 2024</Text>
+        <Text style={styles.footerNote}>Versión 0.0.10 — Coomotor © 2027</Text>
       </ScrollView>
 
       <Modal transparent animationType="fade" visible={exitModalVisible} onRequestClose={() => setExitModalVisible(false)}>

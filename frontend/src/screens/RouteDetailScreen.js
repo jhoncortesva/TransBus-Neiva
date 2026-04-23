@@ -230,7 +230,9 @@ export default function RouteDetailScreen({ navigation, route }) {
     getLocation();
     const socket = getSocket();
     socket.emit('user:request_drivers');
-    socket.on('drivers:locations', setNearbyDrivers);
+    socket.on('drivers:locations', (drivers) => {
+      setNearbyDrivers(drivers.filter(d => d.routeName === routeData.name));
+    });
 
     AsyncStorage.getItem(notifKey).then((val) => {
       if (val === 'true') setNotifActive(true);

@@ -12,7 +12,6 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useAuth } from '../context/AuthContext';
-import { getSocket, disconnectSocket } from '../services/socket';
 
 export default function MapScreen({ navigation }) {
   const { user, tracking, toggleTracking } = useAuth();
@@ -22,30 +21,13 @@ export default function MapScreen({ navigation }) {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [nearbyDrivers, setNearbyDrivers] = useState([]);
 
   const mapRef = useRef(null);
   const uiWatchRef = useRef(null);
 
   useEffect(() => {
     requestLocationPermission();
-
-    // Usuarios reciben ubicaciones de conductores en tiempo real
-    if (!isDriver) {
-      const socket = getSocket();
-      socket.emit('user:request_drivers');
-      socket.on('drivers:locations', (drivers) => {
-        setNearbyDrivers(drivers);
-      });
-    }
-
-    return () => {
-      if (!isDriver) {
-        const socket = getSocket();
-        socket.off('drivers:locations');
-        disconnectSocket();
-      }
-    };
+    return () => {};
   }, []);
 
   const requestLocationPermission = async () => {
@@ -213,19 +195,6 @@ export default function MapScreen({ navigation }) {
               </Marker>
             )}
 
-            {/* Marcadores de conductores (solo para usuarios) */}
-            {!isDriver && nearbyDrivers.map((driver) => (
-              <Marker
-                key={driver.driverId}
-                coordinate={{ latitude: driver.latitude, longitude: driver.longitude }}
-                title={`🚌 ${driver.driverName}`}
-                description="Conductor activo"
-              >
-                <View style={styles.driverMarkerContainer}>
-                  <Text style={styles.driverMarkerEmoji}>🚌</Text>
-                </View>
-              </Marker>
-            ))}
           </MapView>
         )}
 
@@ -235,14 +204,6 @@ export default function MapScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
-        {/* Badge de conductores activos (solo usuarios) */}
-        {!isDriver && (
-          <View style={styles.driversBadge}>
-            <Text style={styles.driversBadgeText}>
-              🚌 {nearbyDrivers.length} conductor{nearbyDrivers.length !== 1 ? 'es' : ''} activo{nearbyDrivers.length !== 1 ? 's' : ''}
-            </Text>
-          </View>
-        )}
       </View>
 
       {/* Panel info */}

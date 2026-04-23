@@ -77,6 +77,7 @@ export const AuthProvider = ({ children }) => {
         getSocket().emit('driver:update_location', {
           driverId: userId,
           driverName: userName,
+          routeName: user?.assignedRoute || null,
           latitude: loc.coords.latitude,
           longitude: loc.coords.longitude,
         });

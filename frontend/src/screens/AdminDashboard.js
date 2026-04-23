@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { driversAPI } from '../services/api';
 
 const DOCUMENT_TYPES = ['CC', 'CE', 'TI', 'PASAPORTE'];
+const AVAILABLE_ROUTES = ['247 (28)'];
 
 const initialForm = {
   full_name: '',
@@ -26,6 +27,7 @@ const initialForm = {
   email: '',
   phone: '',
   bus_plate: '',
+  assigned_route: '',
   username: '',
   password: '',
 };
@@ -39,6 +41,7 @@ export default function AdminDashboard() {
   const [drivers, setDrivers] = useState([]);
   const [loadingDrivers, setLoadingDrivers] = useState(false);
   const [docTypeModal, setDocTypeModal] = useState(false);
+  const [routeModal, setRouteModal] = useState(false);
 
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -57,10 +60,10 @@ export default function AdminDashboard() {
   };
 
   const handleRegisterDriver = async () => {
-    const required = ['full_name', 'document_type', 'document_number', 'email', 'phone', 'bus_plate', 'username', 'password'];
+    const required = ['full_name', 'document_type', 'document_number', 'email', 'phone', 'bus_plate', 'assigned_route', 'username', 'password'];
     for (const field of required) {
       if (!form[field]?.trim()) {
-        Alert.alert('Error', 'Todos los campos son requeridos');
+        Alert.alert('Error', 'Todos los campos son requeridos, incluyendo la ruta asignada');
         return;
       }
     }
@@ -135,6 +138,7 @@ export default function AdminDashboard() {
         <Text style={styles.driverName}>{item.full_name}</Text>
         <Text style={styles.driverDetail}>🪪 {item.document_type}: {item.document_number}</Text>
         <Text style={styles.driverDetail}>🚌 Placa: {item.bus_plate}</Text>
+        <Text style={styles.driverDetail}>🗺️ Ruta: {item.assigned_route || 'Sin asignar'}</Text>
         <Text style={styles.driverDetail}>📱 {item.phone}</Text>
         <Text style={styles.driverDetail}>👤 Usuario: {item.username}</Text>
       </View>
@@ -243,6 +247,15 @@ export default function AdminDashboard() {
             autoCapitalize="characters"
           />
 
+          {/* Assigned route */}
+          <Text style={styles.label}>Ruta Asignada *</Text>
+          <TouchableOpacity style={styles.picker} onPress={() => setRouteModal(true)}>
+            <Text style={[styles.pickerText, !form.assigned_route && { color: '#9E9E9E' }]}>
+              {form.assigned_route || 'Seleccionar ruta...'}
+            </Text>
+            <Text style={styles.pickerArrow}>▼</Text>
+          </TouchableOpacity>
+
           {/* Divider */}
           <View style={styles.divider} />
           <Text style={styles.sectionSubtitle}>Credenciales de Acceso</Text>
@@ -324,6 +337,29 @@ export default function AdminDashboard() {
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.modalCancel} onPress={() => setDocTypeModal(false)}>
+              <Text style={styles.modalCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Route picker modal */}
+      <Modal visible={routeModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Ruta Asignada</Text>
+            {AVAILABLE_ROUTES.map((route) => (
+              <TouchableOpacity
+                key={route}
+                style={styles.modalOption}
+                onPress={() => { update('assigned_route', route); setRouteModal(false); }}
+              >
+                <Text style={[styles.modalOptionText, form.assigned_route === route && styles.modalOptionActive]}>
+                  🚌 {route}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setRouteModal(false)}>
               <Text style={styles.modalCancelText}>Cancelar</Text>
             </TouchableOpacity>
           </View>

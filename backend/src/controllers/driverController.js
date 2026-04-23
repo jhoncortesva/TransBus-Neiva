@@ -15,12 +15,13 @@ const createDriver = async (req, res) => {
       bus_plate,
       username,
       password,
+      assigned_route,
     } = req.body;
 
     // Validate required fields
-    if (!full_name || !document_type || !document_number || !email || !phone || !bus_plate || !username || !password) {
+    if (!full_name || !document_type || !document_number || !email || !phone || !bus_plate || !username || !password || !assigned_route) {
       return res.status(400).json({
-        error: 'Todos los campos son requeridos: nombre completo, tipo documento, número documento, email, celular, placa, usuario y contraseña',
+        error: 'Todos los campos son requeridos: nombre completo, tipo documento, número documento, email, celular, placa, ruta asignada, usuario y contraseña',
       });
     }
 
@@ -60,10 +61,10 @@ const createDriver = async (req, res) => {
 
     // Create driver record
     const driverResult = await client.query(
-      `INSERT INTO drivers (user_id, full_name, document_type, document_number, email, phone, bus_plate, license_pdf_path, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, full_name, document_type, document_number, email, phone, bus_plate, created_at`,
-      [userId, full_name, document_type, document_number, email, phone, bus_plate, licensePdfPath, req.user.id]
+      `INSERT INTO drivers (user_id, full_name, document_type, document_number, email, phone, bus_plate, license_pdf_path, created_by, assigned_route)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, full_name, document_type, document_number, email, phone, bus_plate, assigned_route, created_at`,
+      [userId, full_name, document_type, document_number, email, phone, bus_plate, licensePdfPath, req.user.id, assigned_route]
     );
 
     await client.query('COMMIT');
@@ -90,8 +91,8 @@ const createDriver = async (req, res) => {
 const getDrivers = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT d.id, d.full_name, d.document_type, d.document_number, d.email, 
-              d.phone, d.bus_plate, d.is_active, d.created_at,
+      `SELECT d.id, d.full_name, d.document_type, d.document_number, d.email,
+              d.phone, d.bus_plate, d.assigned_route, d.is_active, d.created_at,
               u.username, u.is_active as user_active
        FROM drivers d
        JOIN users u ON d.user_id = u.id
@@ -111,7 +112,7 @@ const getDriver = async (req, res) => {
     const { id } = req.params;
     const result = await pool.query(
       `SELECT d.id, d.full_name, d.document_type, d.document_number, d.email,
-              d.phone, d.bus_plate, d.license_pdf_path, d.is_active, d.created_at,
+              d.phone, d.bus_plate, d.assigned_route, d.license_pdf_path, d.is_active, d.created_at,
               u.username
        FROM drivers d
        JOIN users u ON d.user_id = u.id

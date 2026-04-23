@@ -107,6 +107,11 @@ async function setupDatabase() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo TEXT;
     `);
 
+    // Add assigned_route column to drivers if it doesn't exist
+    await client.query(`
+      ALTER TABLE drivers ADD COLUMN IF NOT EXISTS assigned_route TEXT;
+    `);
+
     console.log('✅ Database setup complete!');
   } catch (error) {
     console.error('❌ Setup error:', error.message);

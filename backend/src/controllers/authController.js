@@ -20,10 +20,13 @@ const login = async (req, res) => {
       return res.status(400).json({ error: 'Usuario y contraseña son requeridos' });
     }
 
-    // Find user by username or email
+    // Find user by username or email (join drivers to get assigned_route if driver)
     const result = await pool.query(
-      `SELECT id, username, email, password, role, full_name, is_active, profile_photo
-       FROM users WHERE username = $1 OR email = $1`,
+      `SELECT u.id, u.username, u.email, u.password, u.role, u.full_name, u.is_active, u.profile_photo,
+              d.assigned_route
+       FROM users u
+       LEFT JOIN drivers d ON d.user_id = u.id
+       WHERE u.username = $1 OR u.email = $1`,
       [username]
     );
 
@@ -54,6 +57,7 @@ const login = async (req, res) => {
         role: user.role,
         fullName: user.full_name,
         profilePhoto: user.profile_photo || null,
+        assignedRoute: user.assigned_route || null,
       },
     });
   } catch (error) {
