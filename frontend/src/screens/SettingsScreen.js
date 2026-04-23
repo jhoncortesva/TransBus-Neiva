@@ -2,21 +2,19 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, StatusBar,
   TouchableOpacity, TextInput, Alert, ScrollView, Modal,
-  ActivityIndicator, Image,
+  ActivityIndicator, Linking,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
 
 export default function SettingsScreen({ navigation }) {
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
 
   const [passwordModal, setPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loadingPassword, setLoadingPassword] = useState(false);
-  const [loadingPhoto, setLoadingPhoto] = useState(false);
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -44,49 +42,15 @@ export default function SettingsScreen({ navigation }) {
     }
   };
 
-  const handleChangePhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso denegado', 'Necesitamos acceso a tu galería para cambiar la foto.');
-      return;
-    }
+  const handleSupport = () => {
+    Alert.alert(
+      'Soporte',
+      'Contáctanos al siguiente correo de soporte:\ncoomotortransbuscorreos@gmail.com'
+    );
+  };
 
-    // base64:false — en Android, allowsEditing rompe el base64 devuelto por el picker.
-    // Leemos el base64 manualmente desde la URI después de seleccionar.
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-      base64: false,
-    });
-    if (result.canceled) return;
-
-    const uri = result.assets[0].uri;
-    if (!uri) {
-      Alert.alert('Error', 'No se pudo obtener la imagen. Intenta de nuevo.');
-      return;
-    }
-
-    setLoadingPhoto(true);
-    try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-
-      await authAPI.updatePhoto(base64);
-      await updateUser({ profilePhoto: base64 });
-      Alert.alert('Éxito', 'Foto de perfil actualizada');
-    } catch (error) {
-      Alert.alert('Error', error.message || 'No se pudo actualizar la foto');
-    } finally {
-      setLoadingPhoto(false);
-    }
+  const handlePrivacyPolicy = () => {
+    Linking.openURL('https://coomotor.com.co/politica-de-tratamiento-y-proteccion-de-datos-personales/');
   };
 
   const initial = (user?.fullName || user?.username || 'U')[0].toUpperCase();
@@ -105,23 +69,11 @@ export default function SettingsScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.content}>
 
-        {/* Foto de perfil */}
+        {/* Perfil */}
         <View style={styles.profileSection}>
-          <TouchableOpacity style={styles.avatarWrapper} onPress={handleChangePhoto} disabled={loadingPhoto}>
-            {user?.profilePhoto ? (
-              <Image source={{ uri: user.profilePhoto }} style={styles.avatarImage} />
-            ) : (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initial}</Text>
-              </View>
-            )}
-            <View style={styles.avatarEditBtn}>
-              {loadingPhoto
-                ? <ActivityIndicator size="small" color="#1565C0" />
-                : <Text style={styles.avatarEditIcon}>📷</Text>
-              }
-            </View>
-          </TouchableOpacity>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initial}</Text>
+          </View>
           <Text style={styles.profileName}>{user?.fullName || user?.username}</Text>
           <Text style={styles.profileUsername}>@{user?.username}</Text>
           <Text style={styles.profileEmail}>{user?.email || ''}</Text>
@@ -142,11 +94,22 @@ export default function SettingsScreen({ navigation }) {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.option} onPress={() => Alert.alert('Soporte', 'Próximamente podrás contactar a soporte desde aquí.')}>
+          <TouchableOpacity style={styles.option} onPress={handleSupport}>
             <Text style={styles.optionIcon}>📞</Text>
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>Soporte</Text>
               <Text style={styles.optionSub}>Contáctanos si tienes algún problema</Text>
+            </View>
+            <Text style={styles.optionChevron}>›</Text>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity style={styles.option} onPress={handlePrivacyPolicy}>
+            <Text style={styles.optionIcon}>🔒</Text>
+            <View style={styles.optionContent}>
+              <Text style={styles.optionTitle}>Políticas de Privacidad</Text>
+              <Text style={styles.optionSub}>Consulta nuestra política de datos</Text>
             </View>
             <Text style={styles.optionChevron}>›</Text>
           </TouchableOpacity>
@@ -219,26 +182,14 @@ const styles = StyleSheet.create({
   headerTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: 'bold' },
   content: { padding: 20, gap: 16 },
   profileSection: { alignItems: 'center', paddingVertical: 16, gap: 6 },
-  avatarWrapper: { position: 'relative', marginBottom: 4 },
   avatar: {
     width: 88, height: 88, borderRadius: 44,
     backgroundColor: '#1565C0', alignItems: 'center', justifyContent: 'center',
     shadowColor: '#1565C0', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
-  },
-  avatarImage: {
-    width: 88, height: 88, borderRadius: 44,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
+    marginBottom: 4,
   },
   avatarText: { color: '#FFFFFF', fontSize: 36, fontWeight: 'bold' },
-  avatarEditBtn: {
-    position: 'absolute', bottom: 0, right: 0,
-    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 5,
-    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, elevation: 3,
-    width: 30, height: 30, alignItems: 'center', justifyContent: 'center',
-  },
-  avatarEditIcon: { fontSize: 16 },
   profileName: { fontSize: 18, fontWeight: '700', color: '#1A237E' },
   profileUsername: { fontSize: 13, color: '#5C6BC0', fontWeight: '500' },
   profileEmail: { fontSize: 13, color: '#757575' },
