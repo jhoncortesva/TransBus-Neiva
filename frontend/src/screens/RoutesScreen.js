@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView,
   StatusBar, TouchableOpacity, ScrollView, TextInput,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const FAVORITES_KEY = 'coomotor_favorite_routes';
 
 const ROUTES = [
   {
@@ -30,6 +33,24 @@ const ROUTES = [
 
 export default function RoutesScreen({ navigation }) {
   const [query, setQuery] = useState('');
+  const [favorites, setFavorites] = useState(new Set());
+
+  useEffect(() => {
+    AsyncStorage.getItem(FAVORITES_KEY).then((val) => {
+      if (val) setFavorites(new Set(JSON.parse(val)));
+    });
+  }, []);
+
+  const toggleFavorite = async (id) => {
+    const next = new Set(favorites);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setFavorites(next);
+    await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify([...next]));
+  };
 
   const filtered = ROUTES.filter((route) => {
     const q = query.toLowerCase().trim();
@@ -41,6 +62,12 @@ export default function RoutesScreen({ navigation }) {
       route.stops.toLowerCase().includes(q)
     );
   });
+
+  // Favorites first, then rest — each group keeps original order
+  const sorted = [
+    ...filtered.filter((r) => favorites.has(r.id)),
+    ...filtered.filter((r) => !favorites.has(r.id)),
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -73,30 +100,41 @@ export default function RoutesScreen({ navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {filtered.length === 0 ? (
+        {sorted.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🚌</Text>
             <Text style={styles.emptyText}>No se encontraron rutas para "{query}"</Text>
           </View>
         ) : (
-          filtered.map((route) => (
-            <TouchableOpacity
-              key={route.id}
-              style={styles.routeCard}
-              onPress={() => navigation.navigate('RouteDetail', { route })}
-              activeOpacity={0.85}
-            >
-              <View style={[styles.routeBadge, { backgroundColor: route.color }]}>
-                <Text style={styles.routeBadgeText}>{route.id}</Text>
-              </View>
-              <View style={styles.routeInfo}>
-                <Text style={styles.routeName}>{route.name}</Text>
-                <Text style={styles.routeDescription}>{route.description}</Text>
-                <Text style={styles.routeStops} numberOfLines={2}>{route.stops}</Text>
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-          ))
+          sorted.map((route) => {
+            const isFav = favorites.has(route.id);
+            return (
+              <TouchableOpacity
+                key={route.id}
+                style={styles.routeCard}
+                onPress={() => navigation.navigate('RouteDetail', { route })}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.routeBadge, { backgroundColor: route.color }]}>
+                  <Text style={styles.routeBadgeText}>{route.id}</Text>
+                </View>
+                <View style={styles.routeInfo}>
+                  <Text style={styles.routeName}>{route.name}</Text>
+                  <Text style={styles.routeDescription}>{route.description}</Text>
+                  <Text style={styles.routeStops} numberOfLines={2}>{route.stops}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => toggleFavorite(route.id)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={styles.starBtn}
+                >
+                  <Text style={[styles.star, isFav && styles.starActive]}>
+                    {isFav ? '★' : '☆'}
+                  </Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
@@ -145,7 +183,9 @@ const styles = StyleSheet.create({
   routeName: { fontSize: 16, fontWeight: '700', color: '#1A237E' },
   routeDescription: { fontSize: 13, color: '#424242', fontWeight: '500' },
   routeStops: { fontSize: 11, color: '#9E9E9E', marginTop: 2 },
-  chevron: { fontSize: 24, color: '#BDBDBD' },
+  starBtn: { paddingLeft: 4 },
+  star: { fontSize: 24, color: '#BDBDBD' },
+  starActive: { color: '#FFC107' },
   emptyState: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyIcon: { fontSize: 48 },
   emptyText: { fontSize: 14, color: '#9E9E9E', textAlign: 'center' },

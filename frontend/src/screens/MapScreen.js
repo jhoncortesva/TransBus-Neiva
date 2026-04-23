@@ -236,25 +236,27 @@ export default function MapScreen({ navigation }) {
           </View>
         </View>
 
-        <View style={styles.divider} />
+        {isDriver && <View style={styles.divider} />}
 
-        {/* Botón de seguimiento */}
-        <TouchableOpacity
-          style={[styles.trackingBtn, tracking && styles.trackingBtnActive]}
-          onPress={handleToggleTracking}
-        >
-          <Text style={styles.trackingBtnText}>
-            {isDriver
-              ? tracking ? '⏹ Dejar de compartir ubicación' : '▶ Compartir mi ubicación'
-              : tracking ? '⏹ Detener seguimiento' : '▶ Activar seguimiento en vivo'}
-          </Text>
-          {tracking && <View style={styles.trackingDot} />}
-        </TouchableOpacity>
+        {/* Botón de seguimiento — solo conductores */}
+        {isDriver && (
+          <>
+            <TouchableOpacity
+              style={[styles.trackingBtn, tracking && styles.trackingBtnActive]}
+              onPress={handleToggleTracking}
+            >
+              <Text style={styles.trackingBtnText}>
+                {tracking ? '⏹ Dejar de compartir ubicación' : '▶ Compartir mi ubicación'}
+              </Text>
+              {tracking && <View style={styles.trackingDot} />}
+            </TouchableOpacity>
 
-        {isDriver && tracking && (
-          <Text style={styles.sharingNote}>
-            Los pasajeros pueden ver tu posición en tiempo real
-          </Text>
+            {tracking && (
+              <Text style={styles.sharingNote}>
+                Los pasajeros pueden ver tu posición en tiempo real
+              </Text>
+            )}
+          </>
         )}
 
         {!isDriver && (
