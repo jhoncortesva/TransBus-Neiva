@@ -7,6 +7,7 @@ const {
   createDriver,
   getDrivers,
   getDriver,
+  updateDriver,
   toggleDriverStatus,
 } = require('../controllers/driverController');
 
@@ -41,6 +42,7 @@ router.use(authMiddleware, requireRole('admin'));
 router.post('/', upload.single('license_pdf'), createDriver);
 router.get('/', getDrivers);
 router.get('/:id', getDriver);
+router.put('/:id', updateDriver);
 router.patch('/:id/toggle-status', toggleDriverStatus);
 
 module.exports = router;

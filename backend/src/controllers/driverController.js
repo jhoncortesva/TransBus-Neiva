@@ -130,6 +130,77 @@ const getDriver = async (req, res) => {
   }
 };
 
+// Update driver data (admin only)
+const updateDriver = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    const { full_name, document_type, document_number, email, phone, bus_plate, assigned_route, new_password } = req.body;
+
+    if (!full_name || !document_type || !document_number || !email || !phone || !bus_plate || !assigned_route) {
+      return res.status(400).json({ error: 'Todos los campos son requeridos' });
+    }
+
+    const validDocTypes = ['CC', 'CE', 'TI', 'PASAPORTE'];
+    if (!validDocTypes.includes(document_type)) {
+      return res.status(400).json({ error: 'Tipo de documento inválido' });
+    }
+
+    const driverRow = await client.query('SELECT user_id FROM drivers WHERE id = $1', [id]);
+    if (driverRow.rows.length === 0) {
+      return res.status(404).json({ error: 'Conductor no encontrado' });
+    }
+    const userId = driverRow.rows[0].user_id;
+
+    // Check uniqueness conflicts excluding this driver
+    const conflicts = await client.query(
+      `SELECT 1 FROM users WHERE email = $1 AND id != $2
+       UNION
+       SELECT 1 FROM drivers WHERE email = $1 AND id != $3
+       UNION
+       SELECT 1 FROM drivers WHERE document_number = $4 AND id != $3
+       UNION
+       SELECT 1 FROM drivers WHERE bus_plate = $5 AND id != $3`,
+      [email, userId, id, document_number, bus_plate]
+    );
+    if (conflicts.rows.length > 0) {
+      return res.status(409).json({ error: 'Ya existe un conductor con ese email, documento o placa' });
+    }
+
+    await client.query('BEGIN');
+
+    await client.query(
+      `UPDATE drivers SET full_name=$1, document_type=$2, document_number=$3, email=$4,
+       phone=$5, bus_plate=$6, assigned_route=$7, updated_at=CURRENT_TIMESTAMP WHERE id=$8`,
+      [full_name, document_type, document_number, email, phone, bus_plate, assigned_route, id]
+    );
+
+    if (new_password && new_password.trim().length >= 6) {
+      const hashed = await bcrypt.hash(new_password, 12);
+      await client.query(
+        `UPDATE users SET full_name=$1, document_type=$2, document_number=$3, email=$4,
+         phone=$5, password=$6, updated_at=CURRENT_TIMESTAMP WHERE id=$7`,
+        [full_name, document_type, document_number, email, phone, hashed, userId]
+      );
+    } else {
+      await client.query(
+        `UPDATE users SET full_name=$1, document_type=$2, document_number=$3, email=$4,
+         phone=$5, updated_at=CURRENT_TIMESTAMP WHERE id=$6`,
+        [full_name, document_type, document_number, email, phone, userId]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ message: 'Conductor actualizado exitosamente' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Update driver error:', error);
+    res.status(500).json({ error: 'Error al actualizar conductor' });
+  } finally {
+    client.release();
+  }
+};
+
 // Toggle driver active status
 const toggleDriverStatus = async (req, res) => {
   const client = await pool.connect();
@@ -161,4 +232,4 @@ const toggleDriverStatus = async (req, res) => {
   }
 };
 
-module.exports = { createDriver, getDrivers, getDriver, toggleDriverStatus };
+module.exports = { createDriver, getDrivers, getDriver, updateDriver, toggleDriverStatus };

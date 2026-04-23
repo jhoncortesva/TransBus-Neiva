@@ -87,6 +87,16 @@ export const driversAPI = {
     return handleResponse(response);
   },
 
+  update: async (id, data) => {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}/api/drivers/${id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
   toggleStatus: async (id) => {
     const headers = await getHeaders();
     const response = await fetch(`${BASE_URL}/api/drivers/${id}/toggle-status`, {

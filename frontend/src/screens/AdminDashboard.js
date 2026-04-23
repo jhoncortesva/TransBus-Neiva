@@ -43,6 +43,58 @@ export default function AdminDashboard() {
   const [docTypeModal, setDocTypeModal] = useState(false);
   const [routeModal, setRouteModal] = useState(false);
 
+  // Edit driver
+  const [editModal, setEditModal] = useState(false);
+  const [editingDriver, setEditingDriver] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editDocTypeModal, setEditDocTypeModal] = useState(false);
+  const [editRouteModal, setEditRouteModal] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+
+  const updateEdit = (field, value) => setEditForm((prev) => ({ ...prev, [field]: value }));
+
+  const openEditModal = (driver) => {
+    setEditingDriver(driver);
+    setEditForm({
+      full_name: driver.full_name || '',
+      document_type: driver.document_type || 'CC',
+      document_number: driver.document_number || '',
+      email: driver.email || '',
+      phone: driver.phone || '',
+      bus_plate: driver.bus_plate || '',
+      assigned_route: driver.assigned_route || '',
+      new_password: '',
+    });
+    setEditModal(true);
+  };
+
+  const handleUpdateDriver = async () => {
+    const required = ['full_name', 'document_type', 'document_number', 'email', 'phone', 'bus_plate', 'assigned_route'];
+    for (const field of required) {
+      if (!editForm[field]?.trim()) {
+        Alert.alert('Error', 'Todos los campos son requeridos, incluyendo la ruta asignada');
+        return;
+      }
+    }
+    if (editForm.new_password && editForm.new_password.trim().length < 6) {
+      Alert.alert('Error', 'La nueva contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    setEditLoading(true);
+    try {
+      const payload = { ...editForm };
+      if (!payload.new_password?.trim()) delete payload.new_password;
+      await driversAPI.update(editingDriver.id, payload);
+      Alert.alert('✅ Conductor actualizado', 'Los datos se guardaron correctamente.');
+      setEditModal(false);
+      loadDrivers();
+    } catch (error) {
+      Alert.alert('Error', error.message || 'No se pudo actualizar el conductor');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
   const pickLicense = async () => {
@@ -142,12 +194,20 @@ export default function AdminDashboard() {
         <Text style={styles.driverDetail}>📱 {item.phone}</Text>
         <Text style={styles.driverDetail}>👤 Usuario: {item.username}</Text>
       </View>
-      <TouchableOpacity
-        style={[styles.statusBtn, item.is_active ? styles.activeBtn : styles.inactiveBtn]}
-        onPress={() => handleToggleStatus(item.id, item.is_active)}
-      >
-        <Text style={styles.statusBtnText}>{item.is_active ? 'Activo' : 'Inactivo'}</Text>
-      </TouchableOpacity>
+      <View style={styles.driverActions}>
+        <TouchableOpacity
+          style={[styles.statusBtn, item.is_active ? styles.activeBtn : styles.inactiveBtn]}
+          onPress={() => handleToggleStatus(item.id, item.is_active)}
+        >
+          <Text style={styles.statusBtnText}>{item.is_active ? 'Activo' : 'Inactivo'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.editBtn}
+          onPress={() => openEditModal(item)}
+        >
+          <Text style={styles.editBtnText}>✏️ Editar</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -343,6 +403,106 @@ export default function AdminDashboard() {
         </View>
       </Modal>
 
+      {/* Edit driver modal */}
+      <Modal visible={editModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.editModalContent]}>
+            <View style={styles.editModalHeader}>
+              <Text style={styles.modalTitle}>Editar Conductor</Text>
+              <TouchableOpacity onPress={() => setEditModal(false)}>
+                <Text style={styles.editModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
+              <Text style={styles.label}>Nombre Completo *</Text>
+              <TextInput
+                style={styles.input}
+                value={editForm.full_name}
+                onChangeText={(v) => updateEdit('full_name', v)}
+                placeholder="Nombre completo"
+              />
+
+              <Text style={styles.label}>Tipo de Documento *</Text>
+              <TouchableOpacity style={styles.picker} onPress={() => setEditDocTypeModal(true)}>
+                <Text style={styles.pickerText}>{editForm.document_type}</Text>
+                <Text style={styles.pickerArrow}>▼</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.label}>Número de Documento *</Text>
+              <TextInput
+                style={styles.input}
+                value={editForm.document_number}
+                onChangeText={(v) => updateEdit('document_number', v)}
+                placeholder="Número de documento"
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>Correo Electrónico *</Text>
+              <TextInput
+                style={styles.input}
+                value={editForm.email}
+                onChangeText={(v) => updateEdit('email', v)}
+                placeholder="correo@ejemplo.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.label}>Número de Celular *</Text>
+              <TextInput
+                style={styles.input}
+                value={editForm.phone}
+                onChangeText={(v) => updateEdit('phone', v)}
+                placeholder="Número de celular"
+                keyboardType="phone-pad"
+              />
+
+              <Text style={styles.label}>Placa del Bus *</Text>
+              <TextInput
+                style={styles.input}
+                value={editForm.bus_plate}
+                onChangeText={(v) => updateEdit('bus_plate', v.toUpperCase())}
+                placeholder="ABC123"
+                autoCapitalize="characters"
+              />
+
+              <Text style={styles.label}>Ruta Asignada *</Text>
+              <TouchableOpacity style={styles.picker} onPress={() => setEditRouteModal(true)}>
+                <Text style={[styles.pickerText, !editForm.assigned_route && { color: '#9E9E9E' }]}>
+                  {editForm.assigned_route || 'Seleccionar ruta...'}
+                </Text>
+                <Text style={styles.pickerArrow}>▼</Text>
+              </TouchableOpacity>
+
+              <View style={styles.divider} />
+              <Text style={styles.sectionSubtitle}>Cambiar Contraseña</Text>
+
+              <Text style={styles.label}>Nueva Contraseña (opcional)</Text>
+              <TextInput
+                style={styles.input}
+                value={editForm.new_password}
+                onChangeText={(v) => updateEdit('new_password', v)}
+                placeholder="Dejar vacío para no cambiar"
+                secureTextEntry
+              />
+
+              <TouchableOpacity
+                style={[styles.submitButton, editLoading && styles.buttonDisabled]}
+                onPress={handleUpdateDriver}
+                disabled={editLoading}
+              >
+                {editLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.submitButtonText}>GUARDAR CAMBIOS</Text>
+                )}
+              </TouchableOpacity>
+              <View style={{ height: 16 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Route picker modal */}
       <Modal visible={routeModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -360,6 +520,52 @@ export default function AdminDashboard() {
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.modalCancel} onPress={() => setRouteModal(false)}>
+              <Text style={styles.modalCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit: doc type picker */}
+      <Modal visible={editDocTypeModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Tipo de Documento</Text>
+            {DOCUMENT_TYPES.map((type) => (
+              <TouchableOpacity
+                key={type}
+                style={styles.modalOption}
+                onPress={() => { updateEdit('document_type', type); setEditDocTypeModal(false); }}
+              >
+                <Text style={[styles.modalOptionText, editForm.document_type === type && styles.modalOptionActive]}>
+                  {type}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setEditDocTypeModal(false)}>
+              <Text style={styles.modalCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit: route picker */}
+      <Modal visible={editRouteModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Ruta Asignada</Text>
+            {AVAILABLE_ROUTES.map((route) => (
+              <TouchableOpacity
+                key={route}
+                style={styles.modalOption}
+                onPress={() => { updateEdit('assigned_route', route); setEditRouteModal(false); }}
+              >
+                <Text style={[styles.modalOptionText, editForm.assigned_route === route && styles.modalOptionActive]}>
+                  🚌 {route}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setEditRouteModal(false)}>
               <Text style={styles.modalCancelText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
@@ -458,10 +664,16 @@ const styles = StyleSheet.create({
   driverInfo: { flex: 1 },
   driverName: { fontSize: 15, fontWeight: 'bold', color: '#1A237E', marginBottom: 4 },
   driverDetail: { fontSize: 12, color: '#616161', marginBottom: 2 },
-  statusBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginLeft: 10 },
+  driverActions: { alignItems: 'flex-end', gap: 8, marginLeft: 10 },
+  statusBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   activeBtn: { backgroundColor: '#E8F5E9' },
   inactiveBtn: { backgroundColor: '#FFEBEE' },
   statusBtnText: { fontSize: 12, fontWeight: '600', color: '#424242' },
+  editBtn: { backgroundColor: '#E8EAF6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  editBtnText: { fontSize: 12, fontWeight: '600', color: '#3949AB' },
+  editModalContent: { maxHeight: '92%' },
+  editModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  editModalClose: { fontSize: 18, color: '#9E9E9E', paddingHorizontal: 4 },
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 },
