@@ -18,7 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { driversAPI } from '../services/api';
 
 const DOCUMENT_TYPES = ['CC', 'CE', 'TI', 'PASAPORTE'];
-const AVAILABLE_ROUTES = ['247 (28)'];
+const AVAILABLE_ROUTES = ['247 (28)', '112 (18)', '946 (49)'];
 
 const initialForm = {
   full_name: '',

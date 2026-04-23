@@ -9,8 +9,22 @@ const ROUTES = [
     id: '247',
     name: '247 (28)',
     description: 'Colegio Claretiano → Barrio Sur Orientales',
-    stops: 'USCO · Gaitán · Las Américas · Los Párques · Sur Orientales',
+    stops: 'USCO · Gaitán · Las Américas · Los Parques · Sur Orientales',
     color: '#1565C0',
+  },
+  {
+    id: '112',
+    name: '112 (18)',
+    description: 'ESE Canaima → Palmas II Carrera 63',
+    stops: 'U. Corhuila · Presentación · Terminal · Timanco · Canaima',
+    color: '#E65100',
+  },
+  {
+    id: '946',
+    name: '946 (49)',
+    description: 'Alberto Galindo Cra. 7 con 90 → Mercanieva',
+    stops: 'Presentación · Terminal · Neivana de Gas · Mercanieva',
+    color: '#6A1B9A',
   },
 ];
 

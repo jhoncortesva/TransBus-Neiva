@@ -125,16 +125,24 @@ const VUELTA_COORDS = [
   { latitude: 2.9605383, longitude: -75.27236  }, // Claretiano (fin VUELTA) ✓
 ];
 
-// Los dos puntos terminales son compartidos entre IDA y VUELTA
-const CLARETIANO  = IDA_COORDS[0];                      // Inicio IDA = Final VUELTA
-const CAÑA_BRAVA  = IDA_COORDS[IDA_COORDS.length - 1]; // Final IDA  = Inicio VUELTA
-
-const POINTS_OF_INTEREST = [
-  { id: 1, name: 'USCO Sede Central',  latitude: 2.94199, longitude: -75.29852 },
-  { id: 2, name: 'UNICO Outlet Neiva', latitude: 2.96188, longitude: -75.29339 },
-  { id: 3, name: 'Homecenter Neiva',   latitude: 2.95397, longitude: -75.28666 },
-  { id: 4, name: 'Comfamiliar Huila',  latitude: 2.93006, longitude: -75.28945 },
-];
+// Datos de mapa por ruta (polilíneas + POIs + etiquetas terminales)
+// Las rutas sin datos de mapa muestran el mapa vacío centrado en Neiva
+const ROUTE_MAP_DATA = {
+  '247': {
+    ida: IDA_COORDS,
+    vuelta: VUELTA_COORDS,
+    start: IDA_COORDS[0],
+    startLabel: 'Colegio Claretiano — Calle 51',
+    end: IDA_COORDS[IDA_COORDS.length - 1],
+    endLabel: 'Barrio Sur Orientales',
+    pois: [
+      { id: 1, name: 'USCO Sede Central',  latitude: 2.94199, longitude: -75.29852 },
+      { id: 2, name: 'UNICO Outlet Neiva', latitude: 2.96188, longitude: -75.29339 },
+      { id: 3, name: 'Homecenter Neiva',   latitude: 2.95397, longitude: -75.28666 },
+      { id: 4, name: 'Comfamiliar Huila',  latitude: 2.93006, longitude: -75.28945 },
+    ],
+  },
+};
 
 const MAP_REGION = {
   latitude: 2.9435,
@@ -157,6 +165,8 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 export default function RouteDetailScreen({ navigation, route }) {
   const { route: routeData } = route.params;
   const mapRef = useRef(null);
+  const mapData = ROUTE_MAP_DATA[routeData.id] || null;
+  const pois = mapData?.pois || [];
 
   const [userLocation, setUserLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
@@ -168,8 +178,8 @@ export default function RouteDetailScreen({ navigation, route }) {
   const lastNotifRef = useRef(0);
   const notifKey = `notif_route_${routeData.name}`;
 
-  const toggleRoute = (route) =>
-    setActiveRoute(prev => prev === route ? 'both' : route);
+  const toggleRoute = (r) =>
+    setActiveRoute(prev => prev === r ? 'both' : r);
 
   const toggleNotifications = async () => {
     if (notifActive) {
@@ -222,9 +232,9 @@ export default function RouteDetailScreen({ navigation, route }) {
     }, 800);
   };
 
-  const idaColor    = activeRoute === 'vuelta' ? 'rgba(76,175,80,0.15)'   : '#4CAF50';
-  const vueltaColor = activeRoute === 'ida'    ? 'rgba(244,67,54,0.15)'   :
-                      activeRoute === 'vuelta' ? '#F44336'                 : 'rgba(244,67,54,0.5)';
+  const idaColor    = activeRoute === 'vuelta' ? 'rgba(76,175,80,0.15)'  : '#4CAF50';
+  const vueltaColor = activeRoute === 'ida'    ? 'rgba(244,67,54,0.15)'  :
+                      activeRoute === 'vuelta' ? '#F44336'                : 'rgba(244,67,54,0.5)';
 
   useEffect(() => {
     getLocation();
@@ -278,11 +288,14 @@ export default function RouteDetailScreen({ navigation, route }) {
 
       <View style={styles.mapContainer}>
         <MapView ref={mapRef} style={styles.map} initialRegion={MAP_REGION} showsCompass mapType="standard">
-          <Polyline coordinates={IDA_COORDS}    strokeColor={idaColor}    strokeWidth={4} />
-          <Polyline coordinates={VUELTA_COORDS} strokeColor={vueltaColor} strokeWidth={4} />
-
-          <Marker coordinate={CLARETIANO}  title="Inicio IDA / Final VUELTA" description="Colegio Claretiano — Calle 51" pinColor="#4CAF50" />
-          <Marker coordinate={CAÑA_BRAVA}  title="Final IDA / Inicio VUELTA" description="Barrio Sur Orientales — Sur Orientales" pinColor="#F44336" />
+          {mapData && (
+            <>
+              <Polyline coordinates={mapData.ida}    strokeColor={idaColor}    strokeWidth={4} />
+              <Polyline coordinates={mapData.vuelta} strokeColor={vueltaColor} strokeWidth={4} />
+              <Marker coordinate={mapData.start} title="Inicio IDA / Final VUELTA" description={mapData.startLabel} pinColor="#4CAF50" />
+              <Marker coordinate={mapData.end}   title="Final IDA / Inicio VUELTA" description={mapData.endLabel}   pinColor="#F44336" />
+            </>
+          )}
 
           {userLocation && (
             <Marker coordinate={{ latitude: userLocation.latitude, longitude: userLocation.longitude }} title="Mi ubicación">
@@ -301,7 +314,7 @@ export default function RouteDetailScreen({ navigation, route }) {
             </Marker>
           ))}
 
-          {POINTS_OF_INTEREST.map((poi) => (
+          {pois.map((poi) => (
             <Marker
               key={poi.id}
               coordinate={{ latitude: poi.latitude, longitude: poi.longitude }}
@@ -356,14 +369,18 @@ export default function RouteDetailScreen({ navigation, route }) {
 
         <Text style={styles.legendTitle}>Referencias del mapa</Text>
         <View style={styles.legendGrid}>
-          <TouchableOpacity style={[styles.legendItem, activeRoute === 'ida' && styles.legendItemActive]} onPress={() => toggleRoute('ida')}>
-            <View style={[styles.legendLine, { backgroundColor: '#4CAF50' }]} />
-            <Text style={styles.legendText}>IDA{'\n'}Claretiano → Barrio Sur Orientales</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.legendItem, activeRoute === 'vuelta' && styles.legendItemActive]} onPress={() => toggleRoute('vuelta')}>
-            <View style={[styles.legendLine, { backgroundColor: '#F44336' }]} />
-            <Text style={styles.legendText}>VUELTA{'\n'}Barrio Sur Orientales → Claretiano</Text>
-          </TouchableOpacity>
+          {mapData && (
+            <>
+              <TouchableOpacity style={[styles.legendItem, activeRoute === 'ida' && styles.legendItemActive]} onPress={() => toggleRoute('ida')}>
+                <View style={[styles.legendLine, { backgroundColor: '#4CAF50' }]} />
+                <Text style={styles.legendText}>IDA{'\n'}{mapData.startLabel} →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.legendItem, activeRoute === 'vuelta' && styles.legendItemActive]} onPress={() => toggleRoute('vuelta')}>
+                <View style={[styles.legendLine, { backgroundColor: '#F44336' }]} />
+                <Text style={styles.legendText}>VUELTA{'\n'}{mapData.endLabel} →</Text>
+              </TouchableOpacity>
+            </>
+          )}
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: '#1565C0' }]} />
             <Text style={styles.legendText}>Mi{'\n'}ubicación</Text>
@@ -374,31 +391,33 @@ export default function RouteDetailScreen({ navigation, route }) {
           </View>
         </View>
 
-        <View style={styles.divider} />
-
-        <TouchableOpacity style={styles.poisHeader} onPress={() => setPoisExpanded(p => !p)}>
-          <View style={styles.poisHeaderLeft}>
-            <View style={styles.poisDot} />
-            <Text style={styles.poisTitle}>Puntos de Interés</Text>
-            <View style={styles.poisBadge}>
-              <Text style={styles.poisBadgeText}>{POINTS_OF_INTEREST.length}</Text>
-            </View>
-          </View>
-          <Text style={styles.poisChevron}>{poisExpanded ? '▲' : '▼'}</Text>
-        </TouchableOpacity>
-
-        {poisExpanded && (
-          <View style={styles.poisList}>
-            {POINTS_OF_INTEREST.map((poi) => (
-              <TouchableOpacity key={poi.id} style={styles.poiItem} onPress={() => focusPOI(poi)}>
-                <View style={styles.poiIcon}>
-                  <View style={styles.poiPin} />
+        {pois.length > 0 && (
+          <>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.poisHeader} onPress={() => setPoisExpanded(p => !p)}>
+              <View style={styles.poisHeaderLeft}>
+                <View style={styles.poisDot} />
+                <Text style={styles.poisTitle}>Puntos de Interés</Text>
+                <View style={styles.poisBadge}>
+                  <Text style={styles.poisBadgeText}>{pois.length}</Text>
                 </View>
-                <Text style={styles.poiName}>{poi.name}</Text>
-                <Text style={styles.poiChevron}>›</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+              </View>
+              <Text style={styles.poisChevron}>{poisExpanded ? '▲' : '▼'}</Text>
+            </TouchableOpacity>
+            {poisExpanded && (
+              <View style={styles.poisList}>
+                {pois.map((poi) => (
+                  <TouchableOpacity key={poi.id} style={styles.poiItem} onPress={() => focusPOI(poi)}>
+                    <View style={styles.poiIcon}>
+                      <View style={styles.poiPin} />
+                    </View>
+                    <Text style={styles.poiName}>{poi.name}</Text>
+                    <Text style={styles.poiChevron}>›</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </>
         )}
 
         </ScrollView>
