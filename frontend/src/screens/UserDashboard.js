@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
   },
   assignedRoute: {
     fontSize: 11,
-    color: '#E65100',
+    color: '#3949AB',
     fontWeight: '600',
     marginTop: 3,
   },
