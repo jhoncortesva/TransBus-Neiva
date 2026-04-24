@@ -6,8 +6,11 @@ import {
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
+import * as BackgroundFetch from 'expo-background-fetch';
+import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSocket } from '../services/socket';
+import { BACKGROUND_NOTIFY_TASK, BG_NOTIF_PREFS_KEY } from '../tasks/notificationTask';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -185,16 +188,48 @@ export default function RouteDetailScreen({ navigation, route }) {
     if (notifActive) {
       setNotifActive(false);
       AsyncStorage.setItem(notifKey, 'false');
+      AsyncStorage.removeItem(BG_NOTIF_PREFS_KEY);
+      const registered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_NOTIFY_TASK);
+      if (registered) await BackgroundFetch.unregisterTaskAsync(BACKGROUND_NOTIFY_TASK);
       return;
     }
+
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permiso requerido', 'Activa los permisos de notificación en Ajustes del dispositivo.');
       return;
     }
+
     setNotifActive(true);
     AsyncStorage.setItem(notifKey, 'true');
-    Alert.alert('Notificaciones activas', 'Te avisaremos cuando una buseta esté a 10 minutos de tu ubicación.');
+
+    // Guardar ubicación actual para que la tarea de fondo la use
+    let loc = userLocation;
+    if (!loc) {
+      try {
+        const result = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        loc = result.coords;
+      } catch {}
+    }
+    if (loc) {
+      await AsyncStorage.setItem(BG_NOTIF_PREFS_KEY, JSON.stringify({
+        routeName: routeData.name,
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+      }));
+    }
+
+    // Registrar tarea de fondo (Android: mínimo ~15 min según el SO)
+    const registered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_NOTIFY_TASK);
+    if (!registered) {
+      await BackgroundFetch.registerTaskAsync(BACKGROUND_NOTIFY_TASK, {
+        minimumInterval: 60 * 5, // solicita cada 5 min; el SO puede aumentarlo
+        stopOnTerminate: false,
+        startOnBoot: true,
+      });
+    }
+
+    Alert.alert('Notificaciones activas', 'Te avisaremos cuando una buseta esté a 10 minutos de tu ubicación, incluso con la app en segundo plano.');
   };
 
   useEffect(() => {

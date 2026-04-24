@@ -254,6 +254,11 @@ export default function UserDashboard({ navigation }) {
                 {user?.role === 'driver' ? '🚌 Conductor' : '👤 Usuario'}
               </Text>
             </View>
+            {user?.role === 'driver' && (
+              <Text style={styles.assignedRoute}>
+                🗺️ Ruta {user?.assignedRoute || 'Sin asignar'}
+              </Text>
+            )}
           </View>
           <Text style={styles.chevronSettings}>›</Text>
         </TouchableOpacity>
@@ -579,6 +584,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#3949AB',
     fontWeight: '600',
+  },
+  assignedRoute: {
+    fontSize: 11,
+    color: '#E65100',
+    fontWeight: '600',
+    marginTop: 3,
   },
   chevronSettings: {
     fontSize: 24,

@@ -61,8 +61,13 @@ app.use((err, req, res, next) => {
 });
 
 // Socket.io — ubicaciones en tiempo real
-// Map: driverId -> { driverId, driverName, latitude, longitude, updatedAt }
+// Map: driverId -> { driverId, driverName, routeName, latitude, longitude, updatedAt }
 const activeDrivers = new Map();
+
+// Endpoint REST para que la tarea de fondo del frontend consulte conductores activos
+app.get('/api/drivers/live', (req, res) => {
+  res.json({ drivers: Array.from(activeDrivers.values()) });
+});
 
 io.on('connection', (socket) => {
   // Conductor comparte su ubicación
