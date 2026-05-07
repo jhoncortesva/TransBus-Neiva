@@ -112,6 +112,38 @@ async function setupDatabase() {
       ALTER TABLE drivers ADD COLUMN IF NOT EXISTS assigned_route TEXT;
     `);
 
+    // Create routes table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS routes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(100) NOT NULL UNIQUE,
+        description VARCHAR(500),
+        stops TEXT,
+        color VARCHAR(20) DEFAULT '#1565C0',
+        ida_coords JSONB DEFAULT '[]',
+        vuelta_coords JSONB DEFAULT '[]',
+        pois JSONB DEFAULT '[]',
+        created_by UUID REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Seed initial routes if table is empty
+    const { rows: routeCount } = await client.query('SELECT COUNT(*) FROM routes');
+    if (parseInt(routeCount[0].count) === 0) {
+      const INITIAL_ROUTES = require('./routeSeeds');
+      for (const r of INITIAL_ROUTES) {
+        await client.query(
+          `INSERT INTO routes (name, description, stops, color, ida_coords, vuelta_coords, pois)
+           VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb)`,
+          [r.name, r.description, r.stops, r.color,
+           JSON.stringify(r.ida_coords), JSON.stringify(r.vuelta_coords), JSON.stringify(r.pois)]
+        );
+      }
+      console.log('✅ Rutas iniciales sembradas');
+    }
+
     console.log('✅ Database setup complete!');
   } catch (error) {
     console.error('❌ Setup error:', error.message);

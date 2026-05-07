@@ -107,4 +107,47 @@ export const driversAPI = {
   },
 };
 
+export const routesAPI = {
+  getAll: async () => {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}/api/routes`, { headers });
+    return handleResponse(response);
+  },
+
+  getById: async (id) => {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}/api/routes/${id}`, { headers });
+    return handleResponse(response);
+  },
+
+  create: async (data) => {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}/api/routes`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (id, data) => {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}/api/routes/${id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (id) => {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}/api/routes/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    return handleResponse(response);
+  },
+};
+
 export { BASE_URL };

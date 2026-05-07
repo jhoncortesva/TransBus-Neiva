@@ -10,6 +10,7 @@ import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSocket } from '../services/socket';
+import { routesAPI } from '../services/api';
 import { BACKGROUND_NOTIFY_TASK, BG_NOTIF_PREFS_KEY } from '../tasks/notificationTask';
 
 Notifications.setNotificationHandler({
@@ -19,133 +20,6 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
   }),
 });
-
-// ─── Calibración base ────────────────────────────────────────────────────────
-// Puntos confirmados:
-//   Claretiano (Calle 51): 2.9605383, -75.27236
-//   CC Los Comuneros (Carrera 2, ~Calle 8): 2.9259786, -75.291883
-//
-// Espaciado derivado:
-//   Δlat por calle  ≈ (2.9605383 - 2.9259786) / (51 - 8) = 0.000804° (~89m)
-//   Δlon por carrera ≈ 0.003° (~333m) — carreras aumentan hacia el este
-//
-// Longitudes de carreras:
-//   Carrera 1  ≈ -75.2949  Carrera 2  ≈ -75.2919 (Comuneros)
-//   Carrera 3  ≈ -75.2889  Carrera 4  ≈ -75.2859
-//   Carrera 5  ≈ -75.2829  Carrera 8  ≈ -75.2739
-//   Claretiano ≈ -75.2724  (entre Carrera 8 y 9)
-//
-// Latitudes de calles:
-//   Calle 4  ≈ 2.9228   Calle 5  ≈ 2.9236   Calle 8  ≈ 2.9260
-//   Calle 50 ≈ 2.9597   Calle 64 ≈ 2.9710
-// ─────────────────────────────────────────────────────────────────────────────
-
-// IDA (verde):
-// Claretiano → Calle 50 oeste → norte a Calle 64 → Calle 64 oeste a Carrera 1
-// → Carrera 1 sur → Carrera 2 sur → CC Los Comuneros
-// → Calle 4 este → Calle 5 → Calle 2 Este → Calle 3 → Barrio Sur Orientales
-const IDA_COORDS = [
-  { latitude: 2.9605383, longitude: -75.27236  }, // Claretiano (Calle 51) ✓
-  { latitude: 2.96004,   longitude: -75.27486  }, // Popular ✓
-  { latitude: 2.95975,   longitude: -75.27602  }, // Calle 51 ✓
-  { latitude: 2.95885,   longitude: -75.27987  }, // Calle 51 → giro en Carrera 23 ✓
-  { latitude: 2.9577,    longitude: -75.28001  }, // Calle 50 (inicio) ✓
-  { latitude: 2.95723,   longitude: -75.28126  }, // Calle 50 ✓
-  { latitude: 2.95607,   longitude: -75.28416  }, // Calle 50 ✓
-  { latitude: 2.95494,   longitude: -75.28591  }, // Calle 50 ✓
-  { latitude: 2.95379,   longitude: -75.28789  }, // Calle 50 continúa oeste ✓
-  { latitude: 2.95526,   longitude: -75.28857  }, // Sube por Carrera 16 ✓
-  { latitude: 2.95692,   longitude: -75.28925  }, // Carrera 7 ✓
-  { latitude: 2.95921,   longitude: -75.28856  }, // Olímpica Carrera 7 ✓
-  { latitude: 2.96106,   longitude: -75.28803  }, // Carrera 7 ✓
-  { latitude: 2.96135,   longitude: -75.28875  }, // CAIMI Calle 64 ✓
-  { latitude: 2.96334,   longitude: -75.2962   }, // Giro a Carrera 1 ✓
-  { latitude: 2.96209,   longitude: -75.29652  }, // Carrera 1 bajando ✓
-  { latitude: 2.96028,   longitude: -75.29681  }, // Carrera 1 ✓
-  { latitude: 2.95372,   longitude: -75.29784  }, // Carrera 1 ✓
-  { latitude: 2.9501,    longitude: -75.29825  }, // Carrera 1 ✓
-  { latitude: 2.94445,   longitude: -75.29805  }, // Carrera 1 ✓
-  { latitude: 2.94206,   longitude: -75.29791  }, // USCO ✓
-  { latitude: 2.93778,   longitude: -75.29601  }, // Puente Pastrana → Carrera 2 ✓
-  { latitude: 2.93496,   longitude: -75.29479  }, // Carrera 2 ✓
-  { latitude: 2.93321,   longitude: -75.29395  }, // Carrera 2 ✓
-  { latitude: 2.93133,   longitude: -75.29374  }, // Carrera 2 ✓
-  { latitude: 2.92916,   longitude: -75.29294  }, // Carrera 2 ✓
-  { latitude: 2.92695,   longitude: -75.29203  }, // Carrera 2 ✓
-  { latitude: 2.92361,   longitude: -75.29074  }, // Carrera 2 ✓
-  { latitude: 2.92311,   longitude: -75.29072  }, // Entrada glorieta ✓
-  { latitude: 2.92279,   longitude: -75.2899   }, // Glorieta ✓
-  { latitude: 2.92354,   longitude: -75.28751  }, // Calle 4 ✓
-  { latitude: 2.92414,   longitude: -75.28583  }, // Calle 4 ✓
-  { latitude: 2.9268,    longitude: -75.28643  }, // Carrera 7 ✓
-  { latitude: 2.92724,   longitude: -75.28562  }, // Carrera 7 vuelta ✓
-  { latitude: 2.92562,   longitude: -75.28504  }, // Carrera 8 ✓
-  { latitude: 2.92447,   longitude: -75.27115  }, // Barrio Sur Orientales (fin IDA) ✓
-];
-
-// VUELTA (roja):
-// Barrio Sur Orientales → Calle 4 oeste → norte a Calle 8 → Calle 8 oeste
-// → sur a Calle 5 → Calle 5 oeste a Carrera 5
-// → Carrera 5 norte → Calle 64 → Calle 50 este → Calle 51 → Claretiano
-const VUELTA_COORDS = [
-  { latitude: 2.92447,   longitude: -75.27115  }, // Barrio Sur Orientales (inicio VUELTA) ✓
-  { latitude: 2.92585,   longitude: -75.28519  }, // Carrera 8 ✓
-  { latitude: 2.92724,   longitude: -75.28562  }, // Carrera 8 ✓
-  { latitude: 2.92698,   longitude: -75.2865   }, // Carrera 7 ✓
-  { latitude: 2.92773,   longitude: -75.28669  }, // Carrera 7 ✓
-  { latitude: 2.92925,   longitude: -75.28715  }, // Carrera 7 ✓
-  { latitude: 2.93052,   longitude: -75.28746  }, // Carrera 7 ✓
-  { latitude: 2.93005,   longitude: -75.28873  }, // Calle 11 ✓
-  { latitude: 2.92968,   longitude: -75.28992  }, // Calle 11 → Carrera 5 ✓
-  { latitude: 2.93036,   longitude: -75.29016  }, // Carrera 5 ✓
-  { latitude: 2.93169,   longitude: -75.29063  }, // Carrera 5 ✓
-  { latitude: 2.9343,    longitude: -75.29159  }, // Carrera 5 ✓
-  { latitude: 2.93541,   longitude: -75.29475  }, // Avenida Segunda ✓
-  { latitude: 2.93672,   longitude: -75.29533  }, // Avenida Segunda ✓
-  { latitude: 2.93818,   longitude: -75.29599  }, // Avenida Segunda ✓
-  { latitude: 2.94041,   longitude: -75.29695  }, // Avenida Segunda ✓
-  { latitude: 2.94133,   longitude: -75.29762  }, // Avenida Segunda ✓
-  { latitude: 2.94175,   longitude: -75.29755  }, // Puente USCO ✓
-  { latitude: 2.94747,   longitude: -75.29611  }, // Puente USCO ✓
-  { latitude: 2.96051,   longitude: -75.29299  }, // Norte av. Segunda ✓
-  { latitude: 2.96087,   longitude: -75.29441  }, // Calle 59 → Carrera 1d ✓
-  { latitude: 2.96264,   longitude: -75.29398  }, // Calle 64 ✓
-  { latitude: 2.9624,    longitude: -75.29328  }, // Único ✓
-  { latitude: 2.96135,   longitude: -75.28875  }, // CAIMI Calle 64 (= IDA) ✓
-  { latitude: 2.96109,   longitude: -75.28818  }, // Carrera 7 ✓
-  { latitude: 2.96021,   longitude: -75.28848  }, // Andinos Burger (= IDA) ✓
-  { latitude: 2.95948,   longitude: -75.28868  }, // The Luxury Ice ✓
-  { latitude: 2.9568,    longitude: -75.28945  }, // Carrera 7 ✓
-  { latitude: 2.95526,   longitude: -75.28857  }, // Carrera 16 (= IDA) ✓
-  { latitude: 2.95379,   longitude: -75.28789  }, // Calle 50 (= IDA) ✓
-  { latitude: 2.95494,   longitude: -75.28591  }, // Calle 50 ✓
-  { latitude: 2.95607,   longitude: -75.28416  }, // Calle 50 ✓
-  { latitude: 2.95723,   longitude: -75.28126  }, // Calle 50 ✓
-  { latitude: 2.9577,    longitude: -75.28001  }, // Calle 50 inicio (= IDA) ✓
-  { latitude: 2.95885,   longitude: -75.27987  }, // Carrera 23 (= IDA) ✓
-  { latitude: 2.95975,   longitude: -75.27602  }, // Calle 51 ✓
-  { latitude: 2.96004,   longitude: -75.27486  }, // Popular ✓
-  { latitude: 2.9605383, longitude: -75.27236  }, // Claretiano (fin VUELTA) ✓
-];
-
-// Datos de mapa por ruta (polilíneas + POIs + etiquetas terminales)
-// Las rutas sin datos de mapa muestran el mapa vacío centrado en Neiva
-const ROUTE_MAP_DATA = {
-  '247': {
-    ida: IDA_COORDS,
-    vuelta: VUELTA_COORDS,
-    start: IDA_COORDS[0],
-    startLabel: 'Colegio Claretiano — Calle 51',
-    end: IDA_COORDS[IDA_COORDS.length - 1],
-    endLabel: 'Barrio Sur Orientales',
-    pois: [
-      { id: 1, name: 'USCO Sede Central',  latitude: 2.94199, longitude: -75.29852 },
-      { id: 2, name: 'UNICO Outlet Neiva', latitude: 2.96188, longitude: -75.29339 },
-      { id: 3, name: 'Homecenter Neiva',   latitude: 2.95397, longitude: -75.28666 },
-      { id: 4, name: 'Comfamiliar Huila',  latitude: 2.93006, longitude: -75.28945 },
-    ],
-  },
-};
 
 const MAP_REGION = {
   latitude: 2.9435,
@@ -168,9 +42,11 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 export default function RouteDetailScreen({ navigation, route }) {
   const { route: routeData } = route.params;
   const mapRef = useRef(null);
-  const mapData = ROUTE_MAP_DATA[routeData.id] || null;
-  const pois = mapData?.pois || [];
 
+  // Route coords loaded from API
+  const [fullRoute, setFullRoute] = useState(null);
+
+  // UI state
   const [userLocation, setUserLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [nearbyDrivers, setNearbyDrivers] = useState([]);
@@ -181,8 +57,18 @@ export default function RouteDetailScreen({ navigation, route }) {
   const lastNotifRef = useRef(0);
   const notifKey = `notif_route_${routeData.name}`;
 
-  const toggleRoute = (r) =>
-    setActiveRoute(prev => prev === r ? 'both' : r);
+  // Derived map data from API response
+  const idaCoords = fullRoute?.ida_coords || [];
+  const vueltaCoords = fullRoute?.vuelta_coords || [];
+  const pois = (fullRoute?.pois || []).map((p, i) => ({ id: i, ...p }));
+  const hasMapData = idaCoords.length > 0;
+
+  // Parse start/end labels from description "A → B"
+  const descParts = (routeData.description || '').split('→').map(s => s.trim());
+  const startLabel = descParts[0] || 'Inicio';
+  const endLabel = descParts[1] || 'Final';
+
+  const toggleRoute = (r) => setActiveRoute(prev => prev === r ? 'both' : r);
 
   const toggleNotifications = async () => {
     if (notifActive) {
@@ -203,7 +89,6 @@ export default function RouteDetailScreen({ navigation, route }) {
     setNotifActive(true);
     AsyncStorage.setItem(notifKey, 'true');
 
-    // Guardar ubicación actual para que la tarea de fondo la use
     let loc = userLocation;
     if (!loc) {
       try {
@@ -219,11 +104,10 @@ export default function RouteDetailScreen({ navigation, route }) {
       }));
     }
 
-    // Registrar tarea de fondo (Android: mínimo ~15 min según el SO)
     const registered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_NOTIFY_TASK);
     if (!registered) {
       await BackgroundFetch.registerTaskAsync(BACKGROUND_NOTIFY_TASK, {
-        minimumInterval: 60 * 5, // solicita cada 5 min; el SO puede aumentarlo
+        minimumInterval: 60 * 5,
         stopOnTerminate: false,
         startOnBoot: true,
       });
@@ -234,9 +118,8 @@ export default function RouteDetailScreen({ navigation, route }) {
 
   useEffect(() => {
     if (!notifActive || !userLocation || nearbyDrivers.length === 0) return;
-
     const now = Date.now();
-    if (now - lastNotifRef.current < 5 * 60 * 1000) return; // cooldown 5 min
+    if (now - lastNotifRef.current < 5 * 60 * 1000) return;
 
     let minMinutes = Infinity;
     nearbyDrivers.forEach((d) => {
@@ -272,7 +155,13 @@ export default function RouteDetailScreen({ navigation, route }) {
                       activeRoute === 'vuelta' ? '#F44336'                : 'rgba(244,67,54,0.5)';
 
   useEffect(() => {
+    // Load full route with coords from API
+    routesAPI.getById(routeData.id).then((data) => setFullRoute(data.route)).catch(() => {});
+
+    // Location
     getLocation();
+
+    // Socket
     const socket = getSocket();
     socket.emit('user:request_drivers');
     socket.on('drivers:locations', (drivers) => {
@@ -323,12 +212,12 @@ export default function RouteDetailScreen({ navigation, route }) {
 
       <View style={styles.mapContainer}>
         <MapView ref={mapRef} style={styles.map} initialRegion={MAP_REGION} showsCompass mapType="standard">
-          {mapData && (
+          {hasMapData && (
             <>
-              <Polyline coordinates={mapData.ida}    strokeColor={idaColor}    strokeWidth={4} />
-              <Polyline coordinates={mapData.vuelta} strokeColor={vueltaColor} strokeWidth={4} />
-              <Marker coordinate={mapData.start} title="Inicio IDA / Final VUELTA" description={mapData.startLabel} pinColor="#4CAF50" />
-              <Marker coordinate={mapData.end}   title="Final IDA / Inicio VUELTA" description={mapData.endLabel}   pinColor="#F44336" />
+              <Polyline coordinates={idaCoords}    strokeColor={idaColor}    strokeWidth={4} />
+              <Polyline coordinates={vueltaCoords} strokeColor={vueltaColor} strokeWidth={4} />
+              <Marker coordinate={idaCoords[0]} title="Inicio IDA / Final VUELTA" description={startLabel} pinColor="#4CAF50" />
+              <Marker coordinate={idaCoords[idaCoords.length - 1]} title="Final IDA / Inicio VUELTA" description={endLabel} pinColor="#F44336" />
             </>
           )}
 
@@ -404,15 +293,15 @@ export default function RouteDetailScreen({ navigation, route }) {
 
         <Text style={styles.legendTitle}>Referencias del mapa</Text>
         <View style={styles.legendGrid}>
-          {mapData && (
+          {hasMapData && (
             <>
               <TouchableOpacity style={[styles.legendItem, activeRoute === 'ida' && styles.legendItemActive]} onPress={() => toggleRoute('ida')}>
                 <View style={[styles.legendLine, { backgroundColor: '#4CAF50' }]} />
-                <Text style={styles.legendText}>IDA{'\n'}{mapData.startLabel} →</Text>
+                <Text style={styles.legendText}>IDA{'\n'}{startLabel} →</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.legendItem, activeRoute === 'vuelta' && styles.legendItemActive]} onPress={() => toggleRoute('vuelta')}>
                 <View style={[styles.legendLine, { backgroundColor: '#F44336' }]} />
-                <Text style={styles.legendText}>VUELTA{'\n'}{mapData.endLabel} →</Text>
+                <Text style={styles.legendText}>VUELTA{'\n'}{endLabel} →</Text>
               </TouchableOpacity>
             </>
           )}
@@ -523,36 +412,25 @@ const styles = StyleSheet.create({
   legendLine: { width: 18, height: 4, borderRadius: 2, marginTop: 7 },
   legendDot: { width: 12, height: 12, borderRadius: 6, marginTop: 4 },
   legendText: { fontSize: 12, color: '#424242', lineHeight: 17, flex: 1 },
-  // Notificaciones
   notifBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: '#F5F5F5', borderRadius: 12, paddingVertical: 12,
     paddingHorizontal: 14, borderWidth: 1.5, borderColor: '#E0E0E0',
     marginBottom: 14,
   },
-  notifBtnActive: {
-    backgroundColor: '#FFF8E1', borderColor: '#FFB300',
-  },
+  notifBtnActive: { backgroundColor: '#FFF8E1', borderColor: '#FFB300' },
   notifBtnIcon: { fontSize: 18 },
   notifBtnText: { flex: 1, fontSize: 13, color: '#616161', fontWeight: '600' },
   notifBtnTextActive: { color: '#E65100' },
-  notifDot: {
-    width: 8, height: 8, borderRadius: 4, backgroundColor: '#FFB300',
-  },
-  // Puntos de interés
+  notifDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FFB300' },
   poisHeader: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', paddingVertical: 10,
   },
   poisHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  poisDot: {
-    width: 12, height: 12, borderRadius: 6, backgroundColor: '#9C27B0',
-  },
+  poisDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#9C27B0' },
   poisTitle: { fontSize: 11, color: '#9E9E9E', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  poisBadge: {
-    backgroundColor: '#F3E5F5', borderRadius: 10,
-    paddingHorizontal: 6, paddingVertical: 1,
-  },
+  poisBadge: { backgroundColor: '#F3E5F5', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1 },
   poisBadgeText: { fontSize: 11, color: '#9C27B0', fontWeight: '700' },
   poisChevron: { fontSize: 10, color: '#9E9E9E' },
   poisList: { marginBottom: 8 },
@@ -565,9 +443,7 @@ const styles = StyleSheet.create({
     width: 32, height: 32, borderRadius: 16,
     backgroundColor: '#F3E5F5', alignItems: 'center', justifyContent: 'center',
   },
-  poiPin: {
-    width: 10, height: 10, borderRadius: 5, backgroundColor: '#9C27B0',
-  },
+  poiPin: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#9C27B0' },
   poiName: { flex: 1, fontSize: 13, color: '#212121', fontWeight: '500' },
   poiChevron: { fontSize: 18, color: '#BDBDBD' },
 });

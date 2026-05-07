@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 
 const authRoutes = require('./routes/auth');
 const driverRoutes = require('./routes/drivers');
+const routeRoutes = require('./routes/routes');
 const setupDatabase = require('./config/setupDb');
 
 const app = express();
@@ -45,6 +46,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/drivers', driverRoutes);
+app.use('/api/routes', routeRoutes);
 
 // 404 handler
 app.use((req, res) => {
