@@ -8,7 +8,7 @@ const getRoutes = async (req, res) => {
     res.json({ routes: rows });
   } catch (err) {
     console.error('getRoutes error:', err.message);
-    res.status(500).json({ error: 'Error al obtener rutas', detail: err.message });
+    res.status(500).json({ error: 'Error al obtener rutas' });
   }
 };
 
