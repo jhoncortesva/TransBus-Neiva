@@ -6,8 +6,9 @@ const getRoutes = async (req, res) => {
       `SELECT id, name, description, stops, color, created_at FROM routes ORDER BY name`
     );
     res.json({ routes: rows });
-  } catch {
-    res.status(500).json({ error: 'Error al obtener rutas' });
+  } catch (err) {
+    console.error('getRoutes error:', err.message);
+    res.status(500).json({ error: 'Error al obtener rutas', detail: err.message });
   }
 };
 
