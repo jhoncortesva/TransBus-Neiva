@@ -194,4 +194,44 @@ const updatePhoto = async (req, res) => {
   }
 };
 
-module.exports = { login, register, getProfile, changePassword, updatePhoto };
+// Save Expo push token + route subscription for background notifications
+const savePushSub = async (req, res) => {
+  const { push_token, route_name, latitude, longitude } = req.body;
+  if (!push_token || !route_name || latitude == null || longitude == null) {
+    return res.status(400).json({ error: 'push_token, route_name, latitude y longitude son requeridos' });
+  }
+  try {
+    const { rows } = await pool.query('SELECT notification_subs FROM users WHERE id = $1', [req.user.id]);
+    let subs = rows[0]?.notification_subs || [];
+    subs = subs.filter(s => s.route_name !== route_name);
+    subs.push({ route_name, latitude, longitude });
+    await pool.query(
+      'UPDATE users SET push_token = $1, notification_subs = $2::jsonb WHERE id = $3',
+      [push_token, JSON.stringify(subs), req.user.id]
+    );
+    res.json({ message: 'Suscripción guardada' });
+  } catch (error) {
+    console.error('savePushSub error:', error.message);
+    res.status(500).json({ error: 'Error al guardar suscripción' });
+  }
+};
+
+// Remove route subscription
+const removePushSub = async (req, res) => {
+  const { route_name } = req.body;
+  if (!route_name) return res.status(400).json({ error: 'route_name es requerido' });
+  try {
+    const { rows } = await pool.query('SELECT notification_subs FROM users WHERE id = $1', [req.user.id]);
+    let subs = rows[0]?.notification_subs || [];
+    subs = subs.filter(s => s.route_name !== route_name);
+    await pool.query(
+      'UPDATE users SET notification_subs = $1::jsonb WHERE id = $2',
+      [JSON.stringify(subs), req.user.id]
+    );
+    res.json({ message: 'Suscripción eliminada' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar suscripción' });
+  }
+};
+
+module.exports = { login, register, getProfile, changePassword, updatePhoto, savePushSub, removePushSub };

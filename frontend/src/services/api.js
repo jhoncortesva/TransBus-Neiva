@@ -49,6 +49,26 @@ export const authAPI = {
     return handleResponse(response);
   },
 
+  savePushSub: async ({ push_token, route_name, latitude, longitude }) => {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}/api/auth/push-sub`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ push_token, route_name, latitude, longitude }),
+    });
+    return handleResponse(response);
+  },
+
+  removePushSub: async (route_name) => {
+    const headers = await getHeaders();
+    const response = await fetch(`${BASE_URL}/api/auth/push-sub`, {
+      method: 'DELETE',
+      headers,
+      body: JSON.stringify({ route_name }),
+    });
+    return handleResponse(response);
+  },
+
   changePassword: async (currentPassword, newPassword) => {
     const headers = await getHeaders();
     const response = await fetch(`${BASE_URL}/api/auth/change-password`, {

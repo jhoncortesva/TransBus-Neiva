@@ -6,12 +6,10 @@ import {
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
-import * as BackgroundFetch from 'expo-background-fetch';
-import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { getSocket } from '../services/socket';
-import { routesAPI } from '../services/api';
-import { BACKGROUND_NOTIFY_TASK, BG_NOTIF_PREFS_KEY } from '../tasks/notificationTask';
+import { routesAPI, authAPI } from '../services/api';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -54,7 +52,6 @@ export default function RouteDetailScreen({ navigation, route }) {
   const [activeRoute, setActiveRoute] = useState('both');
   const [poisExpanded, setPoisExpanded] = useState(false);
   const [notifActive, setNotifActive] = useState(false);
-  const lastNotifRef = useRef(0);
   const notifKey = `notif_route_${routeData.name}`;
 
   // Derived map data from API response
@@ -74,9 +71,7 @@ export default function RouteDetailScreen({ navigation, route }) {
     if (notifActive) {
       setNotifActive(false);
       AsyncStorage.setItem(notifKey, 'false');
-      AsyncStorage.removeItem(BG_NOTIF_PREFS_KEY);
-      const registered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_NOTIFY_TASK);
-      if (registered) await BackgroundFetch.unregisterTaskAsync(BACKGROUND_NOTIFY_TASK);
+      authAPI.removePushSub(routeData.name).catch(() => {});
       return;
     }
 
@@ -86,60 +81,49 @@ export default function RouteDetailScreen({ navigation, route }) {
       return;
     }
 
-    setNotifActive(true);
-    AsyncStorage.setItem(notifKey, 'true');
+    // Obtener Expo push token para notificaciones en segundo plano
+    let pushToken = null;
+    try {
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      const tokenData = await Notifications.getExpoPushTokenAsync(
+        projectId ? { projectId } : {}
+      );
+      pushToken = tokenData.data;
+    } catch (err) {
+      console.log('Push token no disponible:', err.message);
+    }
 
-    let loc = userLocation;
-    if (!loc) {
+    // Obtener ubicación actual para detección de proximidad
+    let lat = userLocation?.latitude;
+    let lon = userLocation?.longitude;
+    if (lat == null) {
       try {
         const result = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        loc = result.coords;
+        lat = result.coords.latitude;
+        lon = result.coords.longitude;
       } catch {}
     }
-    if (loc) {
-      await AsyncStorage.setItem(BG_NOTIF_PREFS_KEY, JSON.stringify({
-        routeName: routeData.name,
-        latitude: loc.latitude,
-        longitude: loc.longitude,
-      }));
+
+    // Registrar suscripción en el servidor
+    if (pushToken && lat != null) {
+      authAPI.savePushSub({
+        push_token: pushToken,
+        route_name: routeData.name,
+        latitude: lat,
+        longitude: lon,
+      }).catch(() => {});
     }
 
-    const registered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_NOTIFY_TASK);
-    if (!registered) {
-      await BackgroundFetch.registerTaskAsync(BACKGROUND_NOTIFY_TASK, {
-        minimumInterval: 60 * 5,
-        stopOnTerminate: false,
-        startOnBoot: true,
-      });
-    }
-
-    Alert.alert('Notificaciones activas', 'Te avisaremos cuando una buseta esté a 10 minutos de tu ubicación, incluso con la app en segundo plano.');
+    setNotifActive(true);
+    AsyncStorage.setItem(notifKey, 'true');
+    Alert.alert(
+      'Notificaciones activas',
+      pushToken
+        ? 'Recibirás una alerta cuando una buseta esté a 10 minutos, incluso con la app cerrada.'
+        : 'Recibirás alertas mientras la app esté abierta.'
+    );
   };
 
-  useEffect(() => {
-    if (!notifActive || !userLocation || nearbyDrivers.length === 0) return;
-    const now = Date.now();
-    if (now - lastNotifRef.current < 5 * 60 * 1000) return;
-
-    let minMinutes = Infinity;
-    nearbyDrivers.forEach((d) => {
-      const dist = haversineKm(d.latitude, d.longitude, userLocation.latitude, userLocation.longitude);
-      const minutes = Math.round((dist / 20) * 60);
-      if (minutes < minMinutes) minMinutes = minutes;
-    });
-
-    if (minMinutes <= 10) {
-      lastNotifRef.current = now;
-      Notifications.scheduleNotificationAsync({
-        content: {
-          title: `🚌 Ruta ${routeData.name}`,
-          body: `Una buseta está a ~${minMinutes} min de tu ubicación`,
-          sound: true,
-        },
-        trigger: null,
-      });
-    }
-  }, [nearbyDrivers, notifActive, userLocation]);
 
   const focusPOI = (poi) => {
     mapRef.current?.animateToRegion({

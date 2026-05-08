@@ -107,6 +107,14 @@ async function setupDatabase() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo TEXT;
     `);
 
+    // Push notification columns
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS push_token TEXT;
+    `);
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_subs JSONB DEFAULT '[]';
+    `);
+
     // Add assigned_route column to drivers if it doesn't exist
     await client.query(`
       ALTER TABLE drivers ADD COLUMN IF NOT EXISTS assigned_route TEXT;
