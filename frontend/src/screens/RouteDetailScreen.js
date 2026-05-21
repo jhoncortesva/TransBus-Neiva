@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView,
-  StatusBar, TouchableOpacity, ActivityIndicator, ScrollView, Alert,
+  StatusBar, TouchableOpacity, ActivityIndicator, ScrollView, Alert, AppState,
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -147,16 +147,29 @@ export default function RouteDetailScreen({ navigation, route }) {
 
     // Socket
     const socket = getSocket();
-    socket.emit('user:request_drivers');
+
+    const requestDrivers = () => socket.emit('user:request_drivers');
+
+    requestDrivers(); // Petición inicial
+    socket.on('connect', requestDrivers); // Re-pedir al reconectar
     socket.on('drivers:locations', (drivers) => {
       setNearbyDrivers(drivers.filter(d => d.routeName === routeData.name));
+    });
+
+    // Re-pedir conductores cada vez que la app vuelve al primer plano
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') requestDrivers();
     });
 
     AsyncStorage.getItem(notifKey).then((val) => {
       if (val === 'true') setNotifActive(true);
     });
 
-    return () => { socket.off('drivers:locations'); };
+    return () => {
+      socket.off('connect', requestDrivers);
+      socket.off('drivers:locations');
+      appStateSub.remove();
+    };
   }, []);
 
   useEffect(() => {
