@@ -16,8 +16,6 @@ npm-debug.log*
 .expo/
 dist/
 web-build/
-android/
-ios/
 
 # Archivos comprimidos y backups
 *.7z

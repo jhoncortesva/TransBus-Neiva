@@ -212,6 +212,34 @@ npx expo run:android --variant release
 > *Maps SDK for Android* y *Geocoding API* habilitadas. Se configura en
 > `app.json` → `android.config.googleMaps.apiKey`.
 
+#### Notificaciones Push (FCM V1) — primer despliegue
+
+Las notificaciones push en Android requieren credenciales de Firebase que **no se incluyen en el repositorio** por contener claves privadas.
+
+**Paso 1 — `google-services.json`**
+
+1. Firebase Console → tu proyecto → ⚙️ Project Settings → pestaña *General*
+2. Sección *Tu app* → descarga `google-services.json`
+3. Cópialo a `frontend/android/app/google-services.json` (está en `.gitignore`)
+
+**Paso 2 — Service Account Key para EAS (solo una vez por proyecto)**
+
+```bash
+cd frontend
+eas credentials
+# Android → release → Google Service Account
+# → Manage your Google Service Account Key for Push Notifications (FCM V1)
+# → Set up a Google Service Account Key for Push Notifications (FCM V1)
+# → Sube el JSON de clave privada descargado desde:
+#   Firebase Console → Project Settings → Service accounts → Generate new private key
+```
+
+Una vez configurado, reconstruir la app:
+
+```bash
+npx expo run:android --variant release
+```
+
 ---
 
 ## Endpoints API
@@ -225,6 +253,8 @@ npx expo run:android --variant release
 | GET | `/profile` | JWT | Perfil del usuario autenticado |
 | PATCH | `/change-password` | JWT | Cambiar contraseña |
 | PATCH | `/update-photo` | JWT | Actualizar foto de perfil (base64) |
+| PATCH | `/push-sub` | JWT | Suscribir a notificaciones de ruta: `{ push_token, route_name, latitude, longitude }` |
+| DELETE | `/push-sub` | JWT | Cancelar suscripción: `{ route_name }` |
 
 ### Drivers (`/api/drivers`) — solo Admin
 
@@ -232,9 +262,20 @@ npx expo run:android --variant release
 |--------|------|-------------|
 | POST | `/` | Crear conductor (multipart/form-data + PDF licencia) |
 | GET | `/` | Listar todos los conductores (incluye `assigned_route`) |
+| GET | `/live` | Conductores activos en tiempo real (snapshot del Map en memoria) |
 | GET | `/:id` | Ver conductor |
 | PUT | `/:id` | Editar datos del conductor (nombre, doc, email, placa, ruta, contraseña opcional) |
 | PATCH | `/:id/toggle-status` | Activar / Desactivar conductor |
+
+### Routes (`/api/routes`)
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/` | — | Listar todas las rutas |
+| GET | `/:id` | — | Ver ruta con coordenadas IDA/VUELTA y POIs |
+| POST | `/` | Admin | Crear ruta (con coords KML importadas desde el admin) |
+| PUT | `/:id` | Admin | Editar ruta (metadatos; coords solo se sobreescriben si se envían explícitamente) |
+| DELETE | `/:id` | Admin | Eliminar ruta |
 
 ---
 

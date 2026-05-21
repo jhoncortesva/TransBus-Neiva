@@ -7,7 +7,6 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 import { getSocket } from '../services/socket';
 import { routesAPI, authAPI } from '../services/api';
 
@@ -84,13 +83,12 @@ export default function RouteDetailScreen({ navigation, route }) {
     // Obtener Expo push token para notificaciones en segundo plano
     let pushToken = null;
     try {
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-      const tokenData = await Notifications.getExpoPushTokenAsync(
-        projectId ? { projectId } : {}
-      );
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: '74b5fe2e-5f86-4366-9774-98e9dae9e51d',
+      });
       pushToken = tokenData.data;
     } catch (err) {
-      console.log('Push token no disponible:', err.message);
+      // ignore — push no disponible en este entorno
     }
 
     // Obtener ubicación actual para detección de proximidad
