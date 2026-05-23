@@ -1,49 +1,79 @@
-# Coomotor App 🚌
+# TransBus Neiva
 
-App móvil para Coomotor — React Native (Expo SDK 52) + Node.js/Express + PostgreSQL + Socket.io
+App movil para TransBus Neiva — React Native (Expo SDK 52) + Node.js/Express + PostgreSQL + Socket.io
 
 ---
 
 ## Estructura del Proyecto
 
 ```
-coomotor/
+transbus-neiva/
 ├── backend/
 │   ├── src/
 │   │   ├── config/
-│   │   │   ├── db.js          # Pool de conexiones pg (reutilizado en toda la app)
-│   │   │   └── setupDb.js     # Crea tablas y admin por defecto al arrancar
+│   │   │   ├── db.js               # Pool de conexiones pg
+│   │   │   └── setupDb.js          # Crea tablas y admin por defecto al arrancar
 │   │   ├── controllers/
-│   │   │   ├── authController.js    # login, register, getProfile, changePassword, updatePhoto
-│   │   │   └── driverController.js  # createDriver, getDrivers, getDriver, updateDriver, toggleStatus
+│   │   │   ├── authController.js   # login, register, getProfile, changePassword, updatePhoto
+│   │   │   └── driverController.js # createDriver, getDrivers, getDriver, updateDriver, toggleStatus
 │   │   ├── middleware/
-│   │   │   └── auth.js        # authMiddleware (JWT) + requireRole
+│   │   │   └── auth.js             # authMiddleware (JWT) + requireRole
 │   │   ├── routes/
-│   │   │   ├── auth.js        # /api/auth/*
-│   │   │   └── drivers.js     # /api/drivers/*
-│   │   └── index.js           # Entrada: Express + Socket.io + setupDb
+│   │   │   ├── auth.js             # /api/auth/*
+│   │   │   ├── drivers.js          # /api/drivers/*
+│   │   │   └── routes.js           # /api/routes/*
+│   │   └── index.js                # Entrada: Express + Socket.io + setupDb
+│   ├── Dockerfile
 │   └── package.json
-└── frontend/
-    ├── src/
-    │   ├── context/
-    │   │   └── AuthContext.js     # Estado global: user, token, tracking, toggleTracking
-    │   ├── navigation/
-    │   │   └── AppNavigator.js    # Stacks por rol (admin / user / driver)
-    │   ├── screens/
-    │   │   ├── IntroScreen.js
-    │   │   ├── LoginScreen.js
-    │   │   ├── RegisterScreen.js
-    │   │   ├── AdminDashboard.js  # Registrar / editar / listar conductores
-    │   │   ├── UserDashboard.js   # Dashboard usuario/conductor con mapa y accesos rápidos
-    │   │   ├── MapScreen.js       # Mapa GPS a pantalla completa
-    │   │   ├── RoutesScreen.js    # Lista de rutas con búsqueda y favoritos
-    │   │   ├── RouteDetailScreen.js # Mapa de ruta, conductores activos, notificaciones
-    │   │   └── SettingsScreen.js  # Cambio de contraseña, soporte, política de privacidad
-    │   └── services/
-    │       ├── api.js             # Fetch wrapper con BASE_URL y token JWT
-    │       └── socket.js          # Cliente Socket.io (singleton)
-    ├── app.json
-    └── App.js
+├── frontend/
+│   ├── src/
+│   │   ├── context/
+│   │   │   └── AuthContext.js          # Estado global: user, token, tracking, toggleTracking
+│   │   ├── navigation/
+│   │   │   └── AppNavigator.js         # Stacks por rol (admin / user / driver)
+│   │   ├── screens/
+│   │   │   ├── IntroScreen.js
+│   │   │   ├── LoginScreen.js
+│   │   │   ├── RegisterScreen.js
+│   │   │   ├── AdminDashboard.js       # Registrar / editar / listar conductores y rutas
+│   │   │   ├── UserDashboard.js        # Dashboard con mapa y accesos rapidos
+│   │   │   ├── MapScreen.js            # Mapa GPS a pantalla completa
+│   │   │   ├── RoutesScreen.js         # Lista de rutas con busqueda y favoritos
+│   │   │   ├── RouteDetailScreen.js    # Mapa de ruta, conductores activos, notificaciones
+│   │   │   └── SettingsScreen.js       # Contrasena, soporte, politica de privacidad
+│   │   └── services/
+│   │       ├── api.js                  # Fetch wrapper con BASE_URL y token JWT
+│   │       └── socket.js               # Cliente Socket.io (singleton)
+│   ├── android/
+│   ├── app.json
+│   └── App.js
+├── docker-compose.yml
+└── .env.example
+```
+
+---
+
+## Desarrollo con Docker (recomendado)
+
+El backend y PostgreSQL estan configurados con Docker para evitar problemas de versiones. Solo se necesita tener Docker instalado.
+
+```bash
+# 1. Copiar y configurar variables de entorno
+cp .env.example .env
+# Editar .env y cambiar JWT_SECRET por una clave segura
+
+# 2. Levantar backend + base de datos
+docker compose up --build
+```
+
+El backend queda disponible en `http://localhost:3000`. Las tablas se crean automaticamente al arrancar.
+
+```bash
+# Detener servicios
+docker compose down
+
+# Detener y eliminar datos de la base de datos
+docker compose down -v
 ```
 
 ---
@@ -51,15 +81,14 @@ coomotor/
 ## Flujo del Backend
 
 ```
-Petición HTTP
+Peticion HTTP
       │
       ▼
-  index.js  ←── Configura Express, Socket.io, llama setupDb() al arrancar
+  index.js  <── Configura Express, Socket.io, llama setupDb() al arrancar
       │
       ▼
-  routes/auth.js  o  routes/drivers.js
+  routes/auth.js  |  routes/drivers.js  |  routes/routes.js
       │
-      │  (middleware aplicado antes del controller)
       ▼
   middleware/auth.js
       ├── authMiddleware   → verifica JWT del header Authorization: Bearer <token>
@@ -68,21 +97,18 @@ Petición HTTP
       ▼
   controllers/
       ├── authController.js    → consulta/modifica tabla users
-      └── driverController.js  → consulta/modifica tablas drivers + users (transacción)
+      └── driverController.js  → consulta/modifica tablas drivers + users
       │
       ▼
-  config/db.js  →  PostgreSQL (Railway en prod / local en dev)
+  config/db.js  →  PostgreSQL (Railway en prod / Docker en dev)
 ```
 
-**Ejemplo — admin edita un conductor:**
-`PUT /api/drivers/:id` → `authMiddleware` verifica JWT → `requireRole('admin')` verifica rol → `updateDriver()` actualiza `drivers` y `users` en una transacción → responde JSON.
-
-### Socket.io — Tiempo real (dentro de index.js)
+### Socket.io — Tiempo real
 
 ```
 Conductor emite  driver:update_location  →  servidor guarda en activeDrivers Map
-                 { driverId, driverName,     (incluye routeName para filtrado)
-                   routeName, lat, lng }  →  broadcast drivers:locations a todos
+                 { driverId, driverName,     broadcast drivers:locations a todos
+                   routeName, lat, lng }  →  sendPushToSubscribers() notifica usuarios cercanos
 
 Usuario emite    user:request_drivers    →  servidor responde con snapshot actual
 
@@ -97,101 +123,101 @@ RouteDetailScreen filtra la lista recibida por routeName === ruta seleccionada
 App.js
   └── AuthProvider (AuthContext.js)
         │  Al arrancar: carga token + user de AsyncStorage
-        │  Expone: user, token, login, logout, updateUser,
-        │          tracking, toggleTracking (GPS + socket)
         ▼
   AppNavigator.js
-        │  Lee user.role para decidir qué stack mostrar
-        ├── Sin sesión   → IntroScreen → Login / Register
-        ├── role=admin   → AdminDashboard
+        ├── Sin sesion     → IntroScreen → Login / Register
+        ├── role=admin     → AdminDashboard
         └── role=user/driver → UserDashboard → MapScreen
                                              → RoutesScreen → RouteDetailScreen
                                              → SettingsScreen
         ▼
   Pantalla activa
-        │  Datos remotos → services/api.js   (fetch + JWT)
+        │  Datos remotos → services/api.js    (fetch + JWT)
         │  Tiempo real   → services/socket.js (Socket.io)
         ▼
   Backend en Railway
 ```
 
-**Ejemplo — inicio de sesión:**
-`LoginScreen` → `authAPI.login()` → `POST /api/auth/login` → respuesta `{ token, user }` → `AuthContext.login()` persiste en AsyncStorage → `AppNavigator` detecta el cambio y redirige al dashboard correcto.
-
 ---
 
-## Cómo opera Railway
+## Como opera Railway (produccion)
 
 ```
 git push origin main
       │
       ▼
-Railway detecta el push y redespliega automáticamente (~1 min)
+Railway detecta el push y redespliega automaticamente (~1 min)
       │
       ├── Backend Service
       │     Ejecuta: npm install && node src/index.js
-      │     setupDb() crea/migra tablas al arrancar (ALTER TABLE IF NOT EXISTS — nunca destruye datos)
-      │     URL pública: https://coomotortrans-production.up.railway.app
+      │     setupDb() crea/migra tablas (ALTER TABLE IF NOT EXISTS — nunca destruye datos)
       │     Variables de entorno configuradas en Railway Dashboard
       │
       └── PostgreSQL Plugin
             Base de datos persistente en la nube
-            Inyecta DATABASE_URL automáticamente al backend
+            Inyecta DATABASE_URL automaticamente al backend
 ```
-
-En **desarrollo local** el backend se corre con `node src/index.js` apuntando a una PostgreSQL local,
-y `frontend/src/services/api.js` → `BASE_URL` se cambia a la IP local del equipo (`192.168.x.x:3000`)
-para que el dispositivo en la misma red WiFi lo encuentre.
 
 ---
 
 ## Requisitos de Desarrollo
 
-| Herramienta | Versión mínima | Notas |
+### Backend
+
+| Herramienta | Version minima | Notas |
 |---|---|---|
-| Node.js | **18 LTS** | Versiones anteriores fallan (operador `??`) |
-| npm | 9+ | Incluido con Node 18 |
-| Java JDK | **17** | Requerido por Gradle para builds Android |
-| Android Studio | Hedgehog (2023.1)+ | Incluye SDK Manager y emulador |
-| Android SDK | API 34 (Android 14) | Target del proyecto; mínimo API 24 |
+| Docker | 24+ | Recomendado — levanta backend + DB sin configuracion manual |
+| Node.js | 18 LTS | Solo si se ejecuta sin Docker |
+
+### Frontend (Android)
+
+| Herramienta | Version minima | Notas |
+|---|---|---|
+| Node.js | 18 LTS | Requerido siempre |
+| Java JDK | 17 | Requerido por Gradle |
+| Android Studio | Hedgehog (2023.1)+ | Incluye SDK Manager |
+| Android SDK | API 34 | Target del proyecto; minimo API 24 |
 
 ```bash
-# Instalar Node 18 con nvm
+# Node 18 con nvm
 nvm install 18 && nvm use 18
 
 # JDK 17 en Ubuntu/Debian
 sudo apt install openjdk-17-jdk
 ```
 
-### Dispositivo móvil
+### Dispositivo movil
 
 | Requisito | Valor |
 |---|---|
-| Android mínimo | 7.0 (API 24) |
-| Android recomendado | 10+ (API 29+) |
-| Google Play Services | Obligatorio (Maps + notificaciones) |
-| GPS | Obligatorio (funciones de ubicación) |
+| Android minimo | 7.0 (API 24) |
+| Google Play Services | Obligatorio (Maps + notificaciones push) |
+| GPS | Obligatorio |
 
-> Se recomienda **dispositivo físico** — el emulador no tiene GPS real ni Google Maps funcional por defecto.
+Se recomienda dispositivo fisico — el emulador no tiene GPS real ni Google Maps funcional por defecto.
 
 ---
 
-## Configuración y Arranque
+## Configuracion y Arranque
 
-### Backend (local)
+### Backend con Docker
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+### Backend sin Docker
 
 ```bash
 cd backend
 npm install
 
-# Crear .env con:
-# DATABASE_URL=...  (o DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD)
-# JWT_SECRET=clave_secreta
-# ADMIN_USERNAME=admin
-# ADMIN_PASSWORD=Admin@Coomotor2024
-# ADMIN_EMAIL=admin@coomotor.com
+# Crear backend/.env con:
+# DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD  (o DATABASE_URL para Railway)
+# JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL
 
-node src/index.js   # setupDb() crea las tablas automáticamente al arrancar
+node src/index.js
 ```
 
 ### Frontend (Android)
@@ -200,29 +226,26 @@ node src/index.js   # setupDb() crea las tablas automáticamente al arrancar
 cd frontend
 npm install
 
-# Probar en dispositivo/emulador (modo desarrollo con logs en vivo)
+# Desarrollo
 npx expo run:android
 
-# Generar APK distribuible
+# APK release
 npx expo run:android --variant release
-# APK → android/app/build/outputs/apk/release/app-release.apk
+# Salida: android/app/build/outputs/apk/release/app-release.apk
 ```
 
-> **Google Maps API Key** — debe estar activa en Google Cloud Console con
-> *Maps SDK for Android* y *Geocoding API* habilitadas. Se configura en
-> `app.json` → `android.config.googleMaps.apiKey`.
+**Google Maps API Key** — configurar en `app.json` bajo `android.config.googleMaps.apiKey`. Debe tener habilitadas Maps SDK for Android y Geocoding API en Google Cloud Console.
 
 #### Notificaciones Push (FCM V1) — primer despliegue
 
-Las notificaciones push en Android requieren credenciales de Firebase que **no se incluyen en el repositorio** por contener claves privadas.
+Las credenciales de Firebase no se incluyen en el repositorio.
 
 **Paso 1 — `google-services.json`**
 
-1. Firebase Console → tu proyecto → ⚙️ Project Settings → pestaña *General*
-2. Sección *Tu app* → descarga `google-services.json`
-3. Cópialo a `frontend/android/app/google-services.json` (está en `.gitignore`)
+1. Firebase Console → Project Settings → General → descargar `google-services.json`
+2. Copiar a `frontend/android/app/google-services.json` (excluido por .gitignore)
 
-**Paso 2 — Service Account Key para EAS (solo una vez por proyecto)**
+**Paso 2 — Service Account Key para EAS**
 
 ```bash
 cd frontend
@@ -230,11 +253,8 @@ eas credentials
 # Android → release → Google Service Account
 # → Manage your Google Service Account Key for Push Notifications (FCM V1)
 # → Set up a Google Service Account Key for Push Notifications (FCM V1)
-# → Sube el JSON de clave privada descargado desde:
-#   Firebase Console → Project Settings → Service accounts → Generate new private key
+# Subir el JSON desde: Firebase Console → Project Settings → Service accounts → Generate new private key
 ```
-
-Una vez configurado, reconstruir la app:
 
 ```bash
 npx expo run:android --variant release
@@ -246,81 +266,76 @@ npx expo run:android --variant release
 
 ### Auth (`/api/auth`)
 
-| Método | Ruta | Auth | Descripción |
+| Metodo | Ruta | Auth | Descripcion |
 |--------|------|------|-------------|
-| POST | `/login` | — | Iniciar sesión → devuelve `token` + `user` (incluye `assignedRoute` para conductores) |
+| POST | `/login` | — | Iniciar sesion |
 | POST | `/register` | — | Registrar usuario |
 | GET | `/profile` | JWT | Perfil del usuario autenticado |
-| PATCH | `/change-password` | JWT | Cambiar contraseña |
+| PATCH | `/change-password` | JWT | Cambiar contrasena |
 | PATCH | `/update-photo` | JWT | Actualizar foto de perfil (base64) |
-| PATCH | `/push-sub` | JWT | Suscribir a notificaciones de ruta: `{ push_token, route_name, latitude, longitude }` |
-| DELETE | `/push-sub` | JWT | Cancelar suscripción: `{ route_name }` |
+| PATCH | `/push-sub` | JWT | Suscribir a notificaciones: `{ push_token, route_name, latitude, longitude }` |
+| DELETE | `/push-sub` | JWT | Cancelar suscripcion: `{ route_name }` |
 
 ### Drivers (`/api/drivers`) — solo Admin
 
-| Método | Ruta | Descripción |
+| Metodo | Ruta | Descripcion |
 |--------|------|-------------|
 | POST | `/` | Crear conductor (multipart/form-data + PDF licencia) |
-| GET | `/` | Listar todos los conductores (incluye `assigned_route`) |
-| GET | `/live` | Conductores activos en tiempo real (snapshot del Map en memoria) |
+| GET | `/` | Listar todos los conductores |
+| GET | `/live` | Conductores activos en tiempo real |
 | GET | `/:id` | Ver conductor |
-| PUT | `/:id` | Editar datos del conductor (nombre, doc, email, placa, ruta, contraseña opcional) |
+| PUT | `/:id` | Editar datos del conductor |
 | PATCH | `/:id/toggle-status` | Activar / Desactivar conductor |
 
 ### Routes (`/api/routes`)
 
-| Método | Ruta | Auth | Descripción |
+| Metodo | Ruta | Auth | Descripcion |
 |--------|------|------|-------------|
 | GET | `/` | — | Listar todas las rutas |
 | GET | `/:id` | — | Ver ruta con coordenadas IDA/VUELTA y POIs |
-| POST | `/` | Admin | Crear ruta (con coords KML importadas desde el admin) |
-| PUT | `/:id` | Admin | Editar ruta (metadatos; coords solo se sobreescriben si se envían explícitamente) |
+| POST | `/` | Admin | Crear ruta |
+| PUT | `/:id` | Admin | Editar ruta |
 | DELETE | `/:id` | Admin | Eliminar ruta |
 
 ---
 
 ## Roles y Funcionalidades
 
-| Rol | Acceso | Pantallas |
-|-----|--------|-----------|
-| `admin` | Creado automáticamente por `setupDb` | AdminDashboard: registrar, editar, activar/desactivar conductores; asignar rutas |
-| `user` | Registro en la app | Mapa GPS, lista de rutas con favoritos, detalle de ruta con conductores activos y notificaciones |
-| `driver` | Credenciales creadas por admin | Igual que user + botón "Compartir ubicación" (visible solo en ruta asignada) |
+| Rol | Acceso | Funcionalidades |
+|-----|--------|-----------------|
+| `admin` | Creado por setupDb | Gestionar conductores y rutas (crear, editar, activar/desactivar) |
+| `user` | Registro en la app | Mapa GPS, rutas con favoritos, conductores en tiempo real, notificaciones push |
+| `driver` | Credenciales creadas por admin | Todo lo de user + compartir ubicacion en tiempo real |
 
 ### Credenciales Admin por defecto
+
 ```
 Usuario:    admin
-Contraseña: Admin@Coomotor2024
+Contrasena: Admin@TransBus2024
 ```
-> Configurable en `.env` antes del primer arranque.
+
+Configurable en `.env` antes del primer arranque.
 
 ---
 
-## Variables de Entorno — Backend (`.env`)
+## Variables de Entorno
 
 ```env
-PORT=3000
-
-# Base de datos local
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=coomotor_db
-DB_USER=postgres
-DB_PASSWORD=tu_contraseña
-
-# O bien, conexión Railway (tiene prioridad si está definida)
-DATABASE_URL=postgresql://...
-
 # JWT
 JWT_SECRET=clave_secreta_muy_larga
-JWT_EXPIRES_IN=7d
 
-# Admin por defecto
+# Admin por defecto (solo afecta el primer arranque)
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=Admin@Coomotor2024
-ADMIN_EMAIL=admin@coomotor.com
+ADMIN_PASSWORD=Admin@TransBus2024
+ADMIN_EMAIL=admin@transbus.com
 
-# Email (nodemailer — opcional)
-EMAIL_USER=...
-EMAIL_PASS=...
+# Base de datos (sin Docker)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=transbus_db
+DB_USER=postgres
+DB_PASSWORD=tu_contrasena
+
+# O conexion Railway (tiene prioridad si esta definida)
+DATABASE_URL=postgresql://...
 ```

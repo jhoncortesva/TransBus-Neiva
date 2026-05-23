@@ -10,7 +10,7 @@ const pool = process.env.DATABASE_URL
   : new Pool({
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT || 5432,
-      database: process.env.DB_NAME || 'coomotor_db',
+      database: process.env.DB_NAME || 'transbus_db',
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD,
     });
@@ -77,8 +77,8 @@ async function setupDatabase() {
 
     // Create default admin user
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@Coomotor2024';
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@coomotor.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@TransBus2024';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@transbus.com';
 
     const existingAdmin = await client.query(
       'SELECT id FROM users WHERE username = $1',
@@ -90,7 +90,7 @@ async function setupDatabase() {
     if (existingAdmin.rows.length === 0) {
       await client.query(
         `INSERT INTO users (username, email, password, role, full_name)
-         VALUES ($1, $2, $3, 'admin', 'Administrador Coomotor')`,
+         VALUES ($1, $2, $3, 'admin', 'Administrador TransBus Neiva')`,
         [adminUsername, adminEmail, hashedPassword]
       );
       console.log('✅ Admin creado');

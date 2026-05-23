@@ -95,7 +95,7 @@ export default function UserDashboard({ navigation }) {
           <Text style={styles.headerGreeting}>
             ¡Hola, {user?.username}!
           </Text>
-          <Text style={styles.headerSubtitle}>Coomotor — Tu mejor compañía</Text>
+          <Text style={styles.headerSubtitle}>TransBus Neiva</Text>
         </View>
         <TouchableOpacity onPress={handleExitIntent} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Salir</Text>
@@ -263,7 +263,7 @@ export default function UserDashboard({ navigation }) {
           <Text style={styles.chevronSettings}>›</Text>
         </TouchableOpacity>
 
-        <Text style={styles.footerNote}>Versión 0.0.10 — Coomotor © 2027</Text>
+        <Text style={styles.footerNote}>Versión 0.0.10 — TransBus Neiva © 2027</Text>
       </ScrollView>
 
       <Modal transparent animationType="fade" visible={exitModalVisible} onRequestClose={() => setExitModalVisible(false)}>

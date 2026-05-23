@@ -6,13 +6,13 @@ const sendWelcomeEmail = async ({ to, fullName, username, password }) => {
   const name = fullName || username;
 
   await resend.emails.send({
-    from: 'Coomotor <onboarding@resend.dev>',
+    from: 'TransBus Neiva <onboarding@resend.dev>',
     to,
-    subject: 'Bienvenido a Coomotor — Tus datos de acceso',
+    subject: 'Bienvenido a TransBus Neiva — Tus datos de acceso',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f4f7ff; border-radius: 12px;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="color: #1565C0; margin: 0;">Coomotor</h1>
+          <h1 style="color: #1565C0; margin: 0;">TransBus Neiva</h1>
           <p style="color: #5C6BC0; margin: 4px 0 0;">Tu mejor compañía de transporte</p>
         </div>
 
@@ -36,7 +36,7 @@ const sendWelcomeEmail = async ({ to, fullName, username, password }) => {
         </div>
 
         <p style="text-align: center; color: #BDBDBD; font-size: 12px; margin-top: 24px;">
-          © 2024 Coomotor — Todos los derechos reservados
+          © 2024 TransBus Neiva — Todos los derechos reservados
         </p>
       </div>
     `,

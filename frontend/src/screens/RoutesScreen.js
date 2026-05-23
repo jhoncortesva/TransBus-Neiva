@@ -7,7 +7,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { routesAPI } from '../services/api';
 
-const FAVORITES_KEY = 'coomotor_favorite_routes';
+const FAVORITES_KEY = 'transbus_favorite_routes';
 
 export default function RoutesScreen({ navigation }) {
   const [query, setQuery] = useState('');

@@ -107,7 +107,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Coomotor API running', timestamp: new Date() });
+  res.json({ status: 'ok', message: 'TransBus Neiva API running', timestamp: new Date() });
 });
 
 // Routes
@@ -162,7 +162,7 @@ setupDatabase()
   .catch(err => console.error('⚠️ DB setup error:', err.message))
   .finally(() => {
     server.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Coomotor API running on port ${PORT}`);
+      console.log(`🚀 TransBus Neiva API running on port ${PORT}`);
       console.log(`📡 Health check: http://localhost:${PORT}/health`);
       console.log(`🔌 Socket.io activo`);
     });

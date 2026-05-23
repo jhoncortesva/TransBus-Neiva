@@ -1,7 +1,7 @@
 {
-  "name": "coomotor-backend",
+  "name": "transbus-backend",
   "version": "1.0.0",
-  "description": "Backend API for Coomotor app",
+  "description": "Backend API for TransBus Neiva app",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Coomotor",
+    "name": "TransBus Neiva",
     "slug": "coomotor-app",
     "version": "1.0.0",
     "sdkVersion": "52.0.0",
@@ -16,11 +16,11 @@
     "ios": {
       "supportsTablet": false,
       "config": {
-        "googleMapsApiKey": "AIzaSyAd8umMVzvZRTqNuQdmT9vVd7qH7u5a-i0"
+        "googleMapsApiKey": "TU_GOOGLE_MAPS_API_KEY"
       },
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Coomotor necesita acceso a tu ubicación para mostrarte en el mapa.",
-        "NSLocationAlwaysUsageDescription": "Coomotor necesita acceso a tu ubicación para mostrarte en el mapa."
+        "NSLocationWhenInUseUsageDescription": "TransBus Neiva necesita acceso a tu ubicación para mostrarte en el mapa.",
+        "NSLocationAlwaysUsageDescription": "TransBus Neiva necesita acceso a tu ubicación para mostrarte en el mapa."
       }
     },
     "icon": "./assets/icon.png",
@@ -33,7 +33,7 @@
       "package": "com.coomotor.app",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyAd8umMVzvZRTqNuQdmT9vVd7qH7u5a-i0"
+          "apiKey": "TU_GOOGLE_MAPS_API_KEY"
         }
       },
       "permissions": [
@@ -55,7 +55,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Coomotor necesita acceso a tu ubicación para mostrarte en el mapa."
+          "locationWhenInUsePermission": "TransBus Neiva necesita acceso a tu ubicación para mostrarte en el mapa."
         }
       ],
       [
@@ -69,7 +69,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Coomotor necesita acceso a tu galería para cambiar la foto de perfil."
+          "photosPermission": "TransBus Neiva necesita acceso a tu galería para cambiar la foto de perfil."
         }
       ],
       "expo-asset",

@@ -428,7 +428,7 @@ export default function AdminDashboard() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Panel Administrador</Text>
-          <Text style={styles.headerSub}>Coomotor — {user?.username}</Text>
+          <Text style={styles.headerSub}>TransBus Neiva — {user?.username}</Text>
         </View>
         <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Salir</Text>

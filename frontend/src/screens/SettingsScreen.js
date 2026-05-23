@@ -50,7 +50,7 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const handlePrivacyPolicy = () => {
-    Linking.openURL('https://coomotor.com.co/politica-de-tratamiento-y-proteccion-de-datos-personales/');
+    Linking.openURL('https://transbusneiva.com.co/politica-de-privacidad/');
   };
 
   const initial = (user?.fullName || user?.username || 'U')[0].toUpperCase();

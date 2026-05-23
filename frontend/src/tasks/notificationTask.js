@@ -4,7 +4,7 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../services/api';
 
-export const BACKGROUND_NOTIFY_TASK = 'coomotor-route-notify';
+export const BACKGROUND_NOTIFY_TASK = 'transbus-route-notify';
 export const BG_NOTIF_PREFS_KEY = 'bg_notif_prefs';
 const BG_LAST_NOTIF_KEY = 'bg_last_notif';
 
